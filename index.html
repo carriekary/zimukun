@@ -1,296 +1,2331 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 
 <head>
-    <meta charset="UTF-8">
-    <title>小野字幕君</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>小野字幕君 - 中日雙語版（準確平假名）</title>
+
+    <!-- DOCX 解析 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+    <!-- Wanakana 庫 - 用於準確的平假名轉換 -->
+    <script src="https://cdn.jsdelivr.net/npm/wanakana@5.0.0/umd/wanakana.min.js"></script>
+
     <style>
+        :root {
+          --header-height: 120px;
+          --accent: #2c3e50;
+          --subtitle-min-height: 30px;
+          --gutter: 12px;
+          --max-width: auto;
+          --file-input-width: 200px;
+          --container-padding: 15px;
+        }
+        
+        * {
+          box-sizing: border-box;
+        }
+        
+        html,
         body {
+          height: 100%;
           margin: 0;
           padding: 0;
-          font-family: Arial, sans-serif;
+          font-family: "Arial", "Hiragino Sans", "Meiryo", "Noto Serif CJK JP", Roboto, Arial, Noto Serif;
+          background: #f5f5f5;
+          color: #333;
         }
-        /* Header 区域：左侧网站名字，右侧按钮组 */
-        header {
+        
+        .header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: var(--header-height);
           display: flex;
+          align-items: center;
           justify-content: space-between;
-          align-items: center;
-          padding: 10px;
-          background-color: #f5f5f5;
-          border-bottom: 1px solid #ccc;
+          padding: 12px 18px;
+          background: rgba(44, 62, 80, 0.95);
+          color: #fff;
+          z-index: 999;
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
         }
-        #siteTitle {
-          font-size: 24px;
-          font-weight: bold;
-          margin-left: 10px;
-        }
-        #controlsPanel {
+        
+        .header-left {
           display: flex;
-          align-items: center;
-          gap: 15px;
-          margin-right: 10px;
+          flex-direction: column;
+          gap: 4px;
         }
-        /* 各个输入区域统一用 inline-flex 显示 */
-        #videoInputContainer,
-        #controls,
-        #fileLoader {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
+        
+        .header-left h1 {
+          margin: 0;
+          font-size: 30px;
         }
-        /* 主容器: 左侧视频区域，右侧字幕区域 */
-        #main-container {
+        
+        .header-left p {
+          margin: 0;
+          font-size: 12px;
+          opacity: 0.9;
+        }
+        
+        .file-search-container {
           display: flex;
-          width: 100%;
-          height: calc(100vh - 100px); /* 减去 header 占用的高度 */
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
         }
-        #video-container, #subtitleContainer {
+        
+        .search-box {
+          padding: 6px 8px;
+          border-radius: 6px;
+          border: 1px solid #ddd;
+          background: #fff;
+          font-size: 13px;
+          width: 200px;
+        }
+        
+        /* 主內容 */
+        main {
+          padding: calc(var(--header-height) + 12px) var(--container-padding) 140px;
+          max-width: var(--max-width);
+          margin: 0 auto;
+        }
+        
+        #subtitles {
+          display: block;
+        }
+        
+        /* 每行區塊 */
+        .row {
+          display: block;
+          margin: 5px 0;
+        }
+        
+        .subtitle {
+          background: #fff;
+          padding: 8px 12px;
+          border-radius: 8px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+          word-break: break-word;
+          font-size: 15px;
+          min-height: var(--subtitle-min-height);
+          display: flex;
+          flex-direction: row;
+          gap: var(--gutter);
+          align-items: stretch;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          transition: all 0.2s ease;
+          position: relative;
+        }
+        
+        .subtitle:hover {
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+        }
+        
+        .subtitle.has-note {
+          border-left: 4px solid #ff9800;
+        }
+        
+        /* 左側文字框 - 修改為顯示中日雙語 */
+        .text-box {
           flex: 1;
-          box-sizing: border-box;
-          border: 1px solid #ccc;
-        }
-        /* 视频区域 */
-        #video-container {
+          min-height: 35px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          border: none;
+          background: #f9f9f9;
+          font-size: 15px;
+          line-height: 1.8; /* 增加行高以容納振假名 */
+          color: #222;
+          white-space: pre-wrap;
+          word-break: break-word;
           display: flex;
-          justify-content: center;
-          align-items: center;
+          flex-direction: column;
+          align-items: stretch;
+          box-sizing: border-box;
+          overflow: hidden;
+          cursor: pointer;
+          user-select: text;
         }
-        #video-container iframe {
-          width: 100%;
-          height: 100%;
+        
+        /* 日語文本樣式 */
+        .japanese-text {
+          font-family: "Hiragino Sans", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
+          font-size: 16px;
+          color: #2c3e50;
+          margin-bottom: 4px;
+        }
+        
+        /* 中文文本樣式 */
+        .chinese-text {
+          font-family: "Arial", "Microsoft YaHei", sans-serif;
+          font-size: 15px;
+          color: #666;
+          border-top: 1px dashed #eee;
+          padding-top: 4px;
+          margin-top: 4px;
+        }
+        
+        /* 單語模式 - 只顯示一種語言 */
+        .single-language .chinese-text {
+          display: none;
+        }
+        
+        .single-language .japanese-text {
+          margin-bottom: 0;
           border: none;
         }
-        /* 字幕区域 */
-        #subtitleContainer {
-          overflow-y: auto;
-          padding: 10px;
+        
+        /* 振假名樣式 */
+        ruby {
+          ruby-align: center;
+          ruby-position: over;
         }
-        #subtitleContainer ul {
-          list-style: none;
-          padding: 0;
-          margin: 0;
+        
+        rt {
+          font-size: 0.5em;
+          color: #666;
+          opacity: 0.8;
+          font-weight: normal;
+          letter-spacing: 0;
         }
-        #subtitleContainer li {
-          padding: 8px;
-          cursor: pointer;
+        
+        .text-box.has-furigana .japanese-text {
+          line-height: 2.2; /* 增加行高以顯示振假名 */
         }
-        /* 当前播放字幕高亮为黄色 */
-        #subtitleContainer li.active {
-          background-color: yellow;
+        
+        /* 右側區域 */
+        .note-area {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 8px;
+          position: relative;
+          min-width: 0;
+        }
+        
+        /* 加號按鈕 */
+        .add-note-btn {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 1px solid #ddd;
+          background: #fff;
+          color: #666;
+          font-size: 18px;
           font-weight: bold;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
+        }
+        
+        .add-note-btn:hover {
+          background: #f5f5f5;
+          border-color: #aaa;
+        }
+        
+        /* 筆記框容器 */
+        .note-container {
+          flex: 1;
+          display: none;
+          align-items: center;
+          min-width: 0;
+        }
+        
+        /* 有筆記時顯示筆記框容器 */
+        .note-container.has-note {
+          display: flex;
+        }
+        
+        /* 筆記框 */
+        .note-box {
+          width: 550px;
+          height: 30px;
+          max-height: 150px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          border: 1px solid #ddd;
+          background: #fff;
+          font-size: 13px;
+          line-height: 1;
+          color: #333;
+          box-sizing: border-box;
+          resize: vertical;
+          font-family: inherit;
+          transition: all 0.2s ease;
+          overflow-y: auto;
+          display: none;
+        }
+        
+        /* 顯示筆記框 */
+        .note-box.show {
+          display: block;
+        }
+        
+        /* 筆記框被激活 */
+        .note-box.activated {
+          border-color: #4CAF50;
+          box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.3);
+        }
+        
+        /* 筆記有內容時的樣式 */
+        .note-box.has-content {
+          border-color: #ff9800;
+          background: #fff8e1;
+          color: #e65100;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* 編輯時的樣式 */
+        .note-box:focus {
+          outline: none;
+          border-color: var(--accent);
+          background: #fff;
+          color: #333;
+          box-shadow: 0 0 0 3px rgba(53, 92, 125, 0.2);
+        }
+        
+        /* 關閉按鈕 */
+        .close-note-btn {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: 1px solid #ddd;
+          background: #fff;
+          color: #999;
+          font-size: 14px;
+          cursor: pointer;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
+          margin-left: 8px;
+        }
+        
+        .close-note-btn:hover {
+          background: #f5f5f5;
+          color: #666;
+          border-color: #aaa;
+        }
+        
+        /* 顯示關閉按鈕 */
+        .close-note-btn.show {
+          display: flex;
+        }
+        
+        /* 文件信息 */
+        .file-info {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          z-index: 100;
+          border: 1px solid #ddd;
+          max-width: 300px;
+        }
+        
+        /* highlight */
+        .highlight {
+          background: yellow;
+          font-weight: 700;
+        }
+        
+        /* 加載指示器 */
+        .loading {
+          text-align: center;
+          padding: 40px;
+          color: #666;
+          font-size: 14px;
+        }
+        
+        /* 按鈕容器 */
+        .button-container {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          display: flex;
+          gap: 10px;
+          z-index: 100;
+        }
+        
+        /* 匯出按鈕 */
+        .export-btn {
+          background: var(--accent);
+          color: white;
+          border: none;
+          padding: 10px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          transition: all 0.2s ease;
+          min-width: 90px;
+        }
+        
+        .export-btn:hover {
+          background: #2a4a6a;
+          transform: translateY(-1px);
+        }
+        
+        /* 導入按鈕 */
+        .import-btn {
+          background: #28a745;
+          color: white;
+          border: none;
+          padding: 10px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s ease;
+          min-width: 90px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .import-btn:hover {
+          background: #218838;
+          transform: translateY(-1px);
+        }
+        
+        /* 全局狀態指示器 */
+        .global-status {
+          position: fixed;
+          top: calc(var(--header-height) + 10px);
+          right: 18px;
+          background: rgba(255, 255, 255, 0.98);
+          border-radius: 6px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+          padding: 6px 10px;
+          font-size: 12px;
+          color: #333;
+          z-index: 1000;
+          display: none;
+        }
+        
+        .global-status.show {
+          display: block;
+        }
+        
+        /* 進度條 */
+        .progress-container {
+          position: fixed;
+          top: var(--header-height);
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: #f0f0f0;
+          z-index: 999;
+          display: none;
+        }
+        
+        .progress-bar {
+          height: 100%;
+          background: var(--accent);
+          width: 0%;
+          transition: width 0.3s ease;
+        }
+        
+        /* 平假名按鈕 */
+        .furigana-btn {
+          background: #e74c3c;
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          transition: all 0.2s ease;
+        }
+        
+        .furigana-btn:hover {
+          background: #c0392b;
+          transform: translateY(-1px);
+        }
+        
+        .furigana-btn.active {
+          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+          background: #c0392b;
+        }
+        
+        /* 雙語切換按鈕 */
+        .bilingual-btn {
+          background: #9b59b6;
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          transition: all 0.2s ease;
+        }
+        
+        .bilingual-btn:hover {
+          background: #8e44ad;
+          transform: translateY(-1px);
+        }
+        
+        .bilingual-btn.active {
+          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+        }
+        
+        /* 小屏幕（600px-900px） */
+        @media (max-width: 900px) {
+          :root {
+            --header-height: 140px;
+          }
+          
+          .header {
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 12px 16px;
+            height: var(--header-height);
+          }
+          
+          .header-left {
+            width: 100%;
+            margin-bottom: 10px;
+          }
+          
+          .header-left h1 {
+            font-size: 18px;
+            line-height: 1.2;
+          }
+          
+          .header-left p {
+            font-size: 11px;
+            line-height: 1.3;
+          }
+          
+          .file-search-container {
+            width: 100%;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+          
+          #fileInput {
+            flex: 1;
+            min-width: 0;
+            font-size: 12px;
+            padding: 6px 4px;
+          }
+          
+          .search-box {
+            flex: 1;
+            min-width: 0;
+            width: auto;
+            font-size: 12px;
+          }
+          
+          .furigana-btn,
+          .bilingual-btn {
+            font-size: 11px;
+            padding: 5px 8px;
+          }
+          
+          main {
+            padding-top: calc(var(--header-height) + 16px);
+            padding-bottom: 180px;
+          }
+          
+          .subtitle {
+            flex-direction: row;
+            gap: 8px;
+            padding: 8px 10px;
+            position: relative;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+          }
+          
+          .text-box {
+            flex: 1;
+            min-width: 0;
+            padding: 6px 10px;
+            margin-right: 32px;
+            height: auto;
+            min-height: 34px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #333;
+            background: #fdfdfd;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          
+          .text-box:hover {
+            background: #fafafa;
+            border-color: rgba(0, 0, 0, 0.15);
+            white-space: normal;
+            overflow: visible;
+            z-index: 2;
+            position: relative;
+          }
+          
+          .text-box:active {
+            white-space: normal;
+            overflow: visible;
+          }
+          
+          .note-area {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+          }
+          
+          .add-note-btn {
+            display: flex;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            background: #fff;
+            color: #888;
+            font-size: 13px;
+            font-weight: normal;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          }
+          
+          .add-note-btn:hover {
+            background: #f8f8f8;
+            border-color: #999;
+            color: #666;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+            z-index: 3;
+          }
+          
+          .note-container {
+            display: none;
+            width: 0;
+            overflow: hidden;
+            transition: width 0.3s ease;
+          }
+          
+          .note-container.has-note {
+            display: flex;
+            width: 100%;
+          }
+          
+          .note-box {
+            width: 100%;
+            height: 32px;
+            max-height: 150px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background: #fff;
+            font-size: 12px;
+            line-height: 1;
+            color: #333;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            overflow-y: auto;
+            display: none;
+          }
+          
+          .note-box.show {
+            display: block;
+          }
+          
+          .close-note-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #999;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-left: 6px;
+          }
+          
+          .close-note-btn.show {
+            display: flex;
+          }
+          
+          .subtitle.has-note {
+            flex-direction: column;
+            gap: 8px;
+          }
+          
+          .subtitle.has-note .text-box {
+            margin-right: 0;
+            padding-right: 10px;
+            width: 100%;
+            white-space: normal;
+            overflow: visible;
+          }
+          
+          .subtitle.has-note .add-note-btn {
+            display: none;
+          }
+          
+          .subtitle.has-note .note-area {
+            width: 100%;
+            justify-content: space-between;
+          }
+          
+          .subtitle.has-note .note-container {
+            flex: 1;
+          }
+          
+          .button-container {
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
+            justify-content: center;
+            gap: 8px;
+          }
+          
+          .import-btn,
+          .export-btn {
+            padding: 7.5px 12px;
+            font-size: 10.5px;
+            min-width: 67.5px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+          }
+        }
+        
+        /* 超小屏幕（600px以下） */
+        @media (max-width: 600px) {
+          :root {
+            --header-height: 170px;
+          }
+          
+          .header {
+            padding: 10px 12px;
+          }
+          
+          .file-search-container {
+            flex-direction: column;
+            gap: 6px;
+            align-items: stretch;
+          }
+          
+          #fileInput, 
+          .search-box {
+            width: 100%;
+            flex: none;
+          }
+          
+          .header-left h1 {
+            font-size: 16px;
+          }
+          
+          .header-left p {
+            font-size: 10px;
+          }
+          
+          .text-box {
+            padding: 5px 8px;
+            font-size: 13px;
+            min-height: 32px;
+            line-height: 1.8;
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.04);
+            margin-right: 28px;
+          }
+          
+          .subtitle {
+            padding: 6px 8px;
+            margin-bottom: 4px;
+          }
+          
+          .add-note-btn {
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            right: 8px;
+            border-width: 0.5px;
+          }
+          
+          .global-status {
+            top: calc(var(--header-height) + 5px);
+            right: 10px;
+            left: 10px;
+            text-align: center;
+            padding: 5px 8px;
+            font-size: 10.5px;
+          }
+          
+          .file-info {
+            left: 10px;
+            right: 10px;
+            bottom: 70px;
+            max-width: none;
+            font-size: 10.5px;
+            padding: 6px 9px;
+          }
+          
+          .button-container {
+            flex-direction: column;
+            gap: 6px;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+          }
+          
+          .import-btn,
+          .export-btn {
+            width: 100%;
+            text-align: center;
+            padding: 6px 9px;
+            font-size: 10px;
+            min-width: 50px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+          }
+          
+          .furigana-btn,
+          .bilingual-btn {
+            width: 100%;
+            text-align: center;
+            padding: 6px;
+            font-size: 11px;
+          }
+        }
+        
+        /* 橫向屏幕優化 */
+        @media (max-width: 900px) and (orientation: landscape) {
+          :root {
+            --header-height: 90px;
+          }
+          
+          .header {
+            flex-direction: row;
+            align-items: center;
+          }
+          
+          .header-left {
+            width: auto;
+            margin-bottom: 0;
+            margin-right: 10px;
+            flex-shrink: 0;
+          }
+          
+          .file-search-container {
+            flex: 1;
+            flex-direction: row;
+            flex-wrap: nowrap;
+          }
+          
+          .header-left h1 {
+            font-size: 16px;
+          }
+          
+          .header-left p {
+            font-size: 10px;
+          }
+          
+          .subtitle {
+            flex-direction: row;
+          }
+          
+          .text-box {
+            flex: 1;
+            margin-right: 32px;
+            padding-right: 10px;
+          }
+          
+          .add-note-btn {
+            display: flex;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+          }
+          
+          .subtitle.has-note {
+            flex-direction: column;
+          }
+          
+          .subtitle.has-note .text-box {
+            margin-right: 0;
+            padding-right: 10px;
+            white-space: normal;
+          }
+          
+          .subtitle.has-note .add-note-btn {
+            display: none;
+          }
+          
+          .button-container {
+            flex-direction: row;
+          }
+          
+          .import-btn,
+          .export-btn {
+            padding: 7.5px 12px;
+            font-size: 10.5px;
+            min-width: 67.5px;
+          }
+        }
+        
+        /* 確保文件輸入框在小屏幕上可點擊 */
+        #fileInput {
+          cursor: pointer;
+          font-size: 13px;
+        }
+        
+        #fileInput::-webkit-file-upload-button {
+          cursor: pointer;
         }
     </style>
 </head>
 
 <body>
-    <header>
-        <div id="siteTitle">小野字幕君</div>
-        <div id="controlsPanel">
-            <div id="videoInputContainer">
-                <input type="text" id="videoUrl" placeholder="请输入视频链接（如哔哩哔哩、YouTube、泰剧网等）" style="width: 200px;">
-                <button id="loadVideo">加载视频</button>
-            </div>
-            <div id="controls">
-                <button id="playBtn">启动同步（记得同时播放视频）</button>
-                <button id="pauseBtn" disabled>暂停同步</button>
-                <label>时间偏移 (秒):
-                    <input type="number" id="timeOffset" value="0" step="0.1" style="width: 60px;">
-                </label>
-            </div>
-            <div id="fileLoader">
-                <input type="file" id="srtFile" accept=".srt">
-            </div>
+    <header class="header" role="banner">
+        <div class="header-left">
+            <h1>小野字幕君 - 中日雙語版（準確平假名）</h1>
+            <p>支援：.srt / .ass / .docx / .txt / .pdf (中日雙語合併顯示)</p>
+        </div>
+        <div class="file-search-container" role="region" aria-label="檔案與搜尋">
+            <input id="fileInput" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
+            <input id="searchBox" class="search-box" type="text" placeholder="輸入搜尋內容" />
+            
+            <!-- 功能按鈕 -->
+            <button id="bilingualBtn" class="bilingual-btn active">雙語顯示</button>
+            <button id="furiganaBtn" class="furigana-btn">添加平假名</button>
         </div>
     </header>
 
-    <!-- 主容器：左侧视频区域，右侧字幕区域 -->
-    <div id="main-container">
-        <div id="video-container">
-            <!-- 初始示例视频（可以通过上方输入更新） -->
-            <iframe id="videoPlayer" src="https://i.taijuwang.com/" allowfullscreen></iframe>
-        </div>
-        <div id="subtitleContainer">
-            <ul id="subList"></ul>
-        </div>
+    <!-- 進度條 -->
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
     </div>
 
+    <!-- 全局狀態指示器 -->
+    <div class="global-status" id="globalStatus"></div>
+
+    <!-- 文件信息 -->
+    <div class="file-info" id="fileInfo" style="display:none;"></div>
+
+    <!-- 按鈕容器 -->
+    <div class="button-container">
+        <button class="import-btn" id="importBtn">導入筆記</button>
+        <button class="export-btn" id="exportBtn" style="display:none;">導出筆記</button>
+    </div>
+
+    <!-- 隱藏的文件輸入框 -->
+    <input type="file" id="importFileInput" accept=".html" style="display:none" />
+
+    <main>
+        <div id="subtitles" aria-live="polite"></div>
+    </main>
+
     <script>
-        // 全局变量
-        let subtitles = [];
-        let timer = null;
-        let currentTime = 0;
+        // ==================== 核心狀態 ====================
+        let currentFileName = null;
+        let allSubtitles = []; // 存儲原始字幕數據
+        let processedSubtitles = []; // 存儲處理後的字幕數據（合併後）
+        let notesData = {};
+        let noteCount = 0;
+        let currentOpenNoteBox = null;
+        let bilingualEnabled = true; // 默認開啟雙語顯示
+        let furiganaEnabled = false; // 平假名狀態
         
-        const playBtn = document.getElementById('playBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const timeOffsetInput = document.getElementById('timeOffset');
-        const subListUl = document.getElementById('subList');
-        
-        // 如果文本中包含汉字(平假名)格式，将其转换为 ruby 显示（可选）
-        function applyFurigana(text) {
-          return text.replace(/([\u4E00-\u9FFF]+)\(([\u3040-\u309F]+)\)/g,
-                               '<ruby>$1<rt>$2</rt></ruby>');
+        // ==================== 工具函數 ====================
+        function debounce(func, wait) {
+          let timeout;
+          return function executedFunction(...args) {
+            const later = () => {
+              clearTimeout(timeout);
+              func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+          };
         }
         
-        // 解析 SRT 字幕文件：提取序号、开始与结束时间及字幕内容
-        function parseSRT(data) {
-          data = data.replace(/^\uFEFF/, '').replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-          const regex = /(\d+)\n([\d:,]+)\s*-->\s*([\d:,]+)\n([\s\S]*?)(?=\n\n|$)/g;
-          let result;
-          const parsed = [];
-          function timeStrToSeconds(timeStr) {
-            const parts = timeStr.split(',');
-            const [h, m, s] = parts[0].split(':');
-            return parseInt(h, 10) * 3600 +
-                   parseInt(m, 10) * 60 +
-                   parseInt(s, 10) +
-                   parseInt(parts[1], 10) / 1000;
-          }
-          while ((result = regex.exec(data)) !== null) {
-            parsed.push({
-              index: parseInt(result[1], 10),
-              start: timeStrToSeconds(result[2]),
-              end: timeStrToSeconds(result[3]),
-              text: result[4].trim()
-            });
-          }
-          return parsed;
+        function escapeHtml(s) {
+          return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
         
-        // 当 SRT 文件选择后进行解析和生成字幕列表
-        document.getElementById('srtFile').addEventListener('change', function(event) {
-          const file = event.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const content = e.target.result;
-            subtitles = parseSRT(content);
-            if (subtitles.length === 0) {
-              console.error("未能解析字幕，请检查 SRT 文件格式");
+        function escapeRegExp(str) {
+          return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        function showError(msg) {
+          const c = document.getElementById('subtitles');
+          c.innerHTML = `<div class="loading" style="color:#d32f2f;">${escapeHtml(msg)}</div>`;
+        }
+        
+        function showLoading(msg = '加載中...') {
+          const c = document.getElementById('subtitles');
+          c.innerHTML = `<div class="loading">${escapeHtml(msg)}</div>`;
+        }
+        
+        function updateFileInfo(msg, duration = 3000) {
+          const fileInfo = document.getElementById('fileInfo');
+          fileInfo.textContent = msg;
+          fileInfo.style.display = 'block';
+          
+          if (duration > 0) {
+            setTimeout(() => {
+              fileInfo.style.display = 'none';
+            }, duration);
+          }
+        }
+        
+        function showGlobalStatus(msg, duration = 2000) {
+          const status = document.getElementById('globalStatus');
+          status.textContent = msg;
+          status.classList.add('show');
+          
+          setTimeout(() => {
+            status.classList.remove('show');
+          }, duration);
+        }
+        
+        function updateProgress(percent, msg = '') {
+          const container = document.getElementById('progressContainer');
+          const bar = document.getElementById('progressBar');
+          
+          container.style.display = 'block';
+          bar.style.width = percent + '%';
+          
+          if (msg) {
+            updateFileInfo(msg);
+          }
+          
+          if (percent >= 100) {
+            setTimeout(() => {
+              container.style.display = 'none';
+            }, 500);
+          }
+        }
+        
+        function updateNoteCount() {
+          noteCount = Object.keys(notesData).length;
+          if (noteCount > 0) {
+            document.getElementById('exportBtn').style.display = 'block';
+            showGlobalStatus(`已有 ${noteCount} 條筆記`);
+          } else {
+            document.getElementById('exportBtn').style.display = 'none';
+          }
+        }
+        
+        // ==================== 自動調整筆記框高度 ====================
+        function autoResizeTextarea(textarea) {
+          textarea.style.height = '34px';
+          
+          const computedStyle = window.getComputedStyle(textarea);
+          let maxHeight = parseInt(computedStyle.maxHeight, 10);
+          
+          if (isNaN(maxHeight) || maxHeight <= 0) {
+            maxHeight = 300;
+          }
+          
+          const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+          const finalHeight = Math.max(newHeight, 34);
+          
+          textarea.style.height = finalHeight + 'px';
+          
+          if (textarea.scrollHeight > maxHeight) {
+            textarea.style.overflowY = 'auto';
+          } else {
+            textarea.style.overflowY = 'hidden';
+          }
+        }
+        
+        // ==================== 關閉當前打開的筆記框 ====================
+        function closeCurrentNoteBox() {
+          if (currentOpenNoteBox) {
+            const noteBox = currentOpenNoteBox;
+            const index = parseInt(noteBox.dataset.index);
+            const subtitleDiv = noteBox.closest('.subtitle');
+            const noteArea = noteBox.closest('.note-area');
+            const noteContainer = noteArea.querySelector('.note-container');
+            const addNoteBtn = noteArea.querySelector('.add-note-btn');
+            const closeNoteBtn = noteArea.querySelector('.close-note-btn');
+            
+            const trimmedValue = noteBox.value.trim();
+            
+            if (trimmedValue) {
+              notesData[index] = trimmedValue;
+              noteBox.classList.add('has-content');
+              subtitleDiv.classList.add('has-note');
+              noteArea.classList.add('has-note');
+              noteContainer.classList.add('has-note');
+              
+              noteBox.classList.remove('activated');
+              noteBox.classList.add('show');
+              addNoteBtn.style.display = 'none';
+              closeNoteBtn.classList.remove('show');
             } else {
-              buildSubtitleList();
+              delete notesData[index];
+              noteBox.classList.remove('has-content', 'show', 'activated');
+              subtitleDiv.classList.remove('has-note');
+              noteArea.classList.remove('has-note');
+              noteContainer.classList.remove('has-note');
+              
+              addNoteBtn.style.display = 'flex';
+              closeNoteBtn.classList.remove('show');
             }
-          };
-          reader.onerror = function(e) {
-            console.error("读取文件出错：", e);
-          };
-          reader.readAsText(file, "UTF-8");
-        });
+            
+            updateNoteCount();
+            currentOpenNoteBox = null;
+          }
+        }
         
-        // 生成字幕列表（右侧列表自动添加点击跳转功能）
-        function buildSubtitleList() {
-          subListUl.innerHTML = "";
-          subtitles.forEach((sub, idx) => {
-            const li = document.createElement("li");
-            li.innerHTML = `${sub.index}: ${applyFurigana(sub.text)} (${sub.start.toFixed(1)}秒)`;
-            li.addEventListener("click", function() {
-              jumpToSubtitle(sub.start);
+        // ==================== 語言檢測相關 ====================
+        function isJapaneseText(text) {
+          if (!text) return false;
+          const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/;
+          return japaneseRegex.test(text);
+        }
+        
+        function isChineseText(text) {
+          if (!text) return false;
+          // 檢查是否包含中文漢字，但不包含日文假名
+          const chineseRegex = /[\u4E00-\u9FAF]/;
+          const japaneseKanaRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
+          return chineseRegex.test(text) && !japaneseKanaRegex.test(text);
+        }
+        
+        // ==================== 中日雙語合併處理 ====================
+        function processBilingualSubtitles(subtitles) {
+          const processed = [];
+          
+          // 如果字幕包含時間碼信息（SRT/ASS格式），則按時間碼合併
+          if (subtitles.length > 0 && subtitles[0].startTime) {
+            return mergeSubtitlesByTimecode(subtitles);
+          }
+          
+          // 如果沒有時間碼信息（TXT/DOCX/PDF格式），則按順序和語言檢測合併
+          return mergeSubtitlesByLanguageDetection(subtitles);
+        }
+        
+        // 按時間碼合併字幕（用於SRT/ASS）
+        function mergeSubtitlesByTimecode(subtitles) {
+          const merged = [];
+          const timecodeMap = {};
+          
+          // 首先按時間碼分組
+          subtitles.forEach((subtitle, index) => {
+            const timeKey = `${subtitle.startTime}-${subtitle.endTime}`;
+            if (!timecodeMap[timeKey]) {
+              timecodeMap[timeKey] = {
+                startTime: subtitle.startTime,
+                endTime: subtitle.endTime,
+                texts: []
+              };
+            }
+            timecodeMap[timeKey].texts.push({
+              text: subtitle.text,
+              index: index
             });
-            subListUl.appendChild(li);
+          });
+          
+          // 處理每個時間碼組
+          Object.values(timecodeMap).forEach((group, groupIndex) => {
+            if (group.texts.length === 1) {
+              // 單一字幕行
+              const text = group.texts[0].text;
+              const isJP = isJapaneseText(text);
+              const isZH = isChineseText(text);
+              
+              merged.push({
+                japanese: isJP ? text : '',
+                chinese: isZH ? text : '',
+                originalText: text,
+                isBilingual: false,
+                startTime: group.startTime,
+                endTime: group.endTime
+              });
+            } else if (group.texts.length === 2) {
+              // 兩個字幕行，可能是中日雙語
+              const text1 = group.texts[0].text;
+              const text2 = group.texts[1].text;
+              const isText1JP = isJapaneseText(text1);
+              const isText1ZH = isChineseText(text1);
+              const isText2JP = isJapaneseText(text2);
+              const isText2ZH = isChineseText(text2);
+              
+              if ((isText1JP && isText2ZH) || (isText1ZH && isText2JP)) {
+                // 確認為中日雙語
+                const japanese = isText1JP ? text1 : text2;
+                const chinese = isText1ZH ? text1 : text2;
+                
+                merged.push({
+                  japanese: japanese,
+                  chinese: chinese,
+                  originalText: `${japanese} | ${chinese}`,
+                  isBilingual: true,
+                  startTime: group.startTime,
+                  endTime: group.endTime
+                });
+              } else {
+                // 不是中日雙語，保持原樣
+                group.texts.forEach((item, i) => {
+                  merged.push({
+                    japanese: isJapaneseText(item.text) ? item.text : '',
+                    chinese: isChineseText(item.text) ? item.text : '',
+                    originalText: item.text,
+                    isBilingual: false,
+                    startTime: group.startTime,
+                    endTime: group.endTime
+                  });
+                });
+              }
+            } else {
+              // 多於兩個字幕行，按原樣處理
+              group.texts.forEach((item, i) => {
+                const text = item.text;
+                merged.push({
+                  japanese: isJapaneseText(text) ? text : '',
+                  chinese: isChineseText(text) ? text : '',
+                  originalText: text,
+                  isBilingual: false,
+                  startTime: group.startTime,
+                  endTime: group.endTime
+                });
+              });
+            }
+          });
+          
+          return merged;
+        }
+        
+        // 按語言檢測合併字幕（用於TXT/DOCX/PDF）
+        function mergeSubtitlesByLanguageDetection(subtitles) {
+          const processed = [];
+          let i = 0;
+          
+          while (i < subtitles.length) {
+            const current = subtitles[i];
+            
+            // 如果是最後一行，直接添加
+            if (i === subtitles.length - 1) {
+              processed.push({
+                japanese: isJapaneseText(current.text) ? current.text : '',
+                chinese: isChineseText(current.text) ? current.text : '',
+                originalText: current.text || '',
+                isBilingual: false
+              });
+              i++;
+              continue;
+            }
+            
+            const next = subtitles[i + 1];
+            
+            // 判斷當前和下一行是否為中日雙語對
+            const isCurrentJapanese = isJapaneseText(current.text);
+            const isCurrentChinese = isChineseText(current.text);
+            const isNextJapanese = isJapaneseText(next.text);
+            const isNextChinese = isChineseText(next.text);
+            
+            // 情況1: 日語在前，中文在後
+            if (isCurrentJapanese && isNextChinese) {
+              processed.push({
+                japanese: current.text || '',
+                chinese: next.text || '',
+                originalText: current.text || '',
+                isBilingual: true
+              });
+              i += 2; // 跳過兩行
+            }
+            // 情況2: 中文在前，日語在後
+            else if (isCurrentChinese && isNextJapanese) {
+              processed.push({
+                japanese: next.text || '',
+                chinese: current.text || '',
+                originalText: next.text || '',
+                isBilingual: true
+              });
+              i += 2; // 跳過兩行
+            }
+            // 情況3: 同一行內包含中日文本（用分隔符分隔）
+            else if (current.text && (current.text.includes('|') || current.text.includes('/') || current.text.includes('\\'))) {
+              const parts = current.text.split(/[|/\\]/).map(p => p.trim());
+              if (parts.length >= 2) {
+                // 嘗試判斷哪部分是日語，哪部分是中文
+                let japanesePart = parts[0];
+                let chinesePart = parts[1];
+                
+                // 如果第一部分是中文，第二部分是日語，則交換
+                if (isChineseText(parts[0]) && isJapaneseText(parts[1])) {
+                  japanesePart = parts[1];
+                  chinesePart = parts[0];
+                }
+                
+                processed.push({
+                  japanese: japanesePart,
+                  chinese: chinesePart,
+                  originalText: current.text || '',
+                  isBilingual: true
+                });
+              } else {
+                processed.push({
+                  japanese: current.text || '',
+                  chinese: '',
+                  originalText: current.text || '',
+                  isBilingual: false
+                });
+              }
+              i++;
+            }
+            // 其他情況：單語言行
+            else {
+              processed.push({
+                japanese: isJapaneseText(current.text) ? current.text : '',
+                chinese: isChineseText(current.text) ? current.text : '',
+                originalText: current.text || '',
+                isBilingual: false
+              });
+              i++;
+            }
+          }
+          
+          return processed;
+        }
+        
+        // ==================== 切換雙語顯示 ====================
+        function toggleBilingualDisplay() {
+          bilingualEnabled = !bilingualEnabled;
+          
+          const btn = document.getElementById('bilingualBtn');
+          if (bilingualEnabled) {
+            btn.classList.add('active');
+            btn.textContent = '單語顯示';
+            document.body.classList.remove('single-language');
+            showGlobalStatus('已啟用中日雙語顯示', 2000);
+          } else {
+            btn.classList.remove('active');
+            btn.textContent = '雙語顯示';
+            document.body.classList.add('single-language');
+            showGlobalStatus('已切換為單語顯示', 2000);
+          }
+          
+          // 重新渲染字幕
+          if (processedSubtitles.length > 0) {
+            renderAllSubtitles(processedSubtitles);
+          }
+        }
+        
+        // ==================== 準確的平假名功能（使用Wanakana庫） ====================
+        // 使用Wanakana庫來準確地為日語文本添加平假名
+        function addAccurateFurigana(text) {
+          if (!text || !text.trim()) return text;
+          
+          try {
+            // 使用Wanakana庫的tokenize函數來分詞並獲取讀音
+            const tokens = wanakana.tokenize(text);
+            
+            let result = '';
+            
+            for (const token of tokens) {
+              if (token.type === 'en' || token.type === 'other') {
+                // 英文或其他字符，直接顯示
+                result += escapeHtml(token.value);
+              } else if (token.type === 'ja') {
+                // 日語字符
+                if (isKanjiCharacter(token.value)) {
+                  // 漢字字符，嘗試獲取讀音
+                  const reading = wanakana.toHiragana(token.value, {
+                    customKanaMapping: {},
+                    IMEMode: false,
+                    useObsoleteKana: false
+                  });
+                  
+                  // 如果讀音與原字符相同（可能沒有找到讀音），則直接顯示
+                  if (reading === token.value) {
+                    result += escapeHtml(token.value);
+                  } else {
+                    // 否則添加振假名
+                    result += `<ruby>${escapeHtml(token.value)}<rt>${escapeHtml(reading)}</rt></ruby>`;
+                  }
+                } else if (isKatakana(token.value)) {
+                  // 片假名，轉換為平假名並顯示
+                  const hiragana = wanakana.toHiragana(token.value);
+                  result += `<ruby>${escapeHtml(token.value)}<rt>${escapeHtml(hiragana)}</rt></ruby>`;
+                } else {
+                  // 平假名或其他日語字符，直接顯示
+                  result += escapeHtml(token.value);
+                }
+              }
+            }
+            
+            return result;
+          } catch (error) {
+            console.error('平假名轉換錯誤:', error);
+            // 如果轉換失敗，返回原始文本
+            return escapeHtml(text);
+          }
+        }
+        
+        // 輔助函數：檢查是否為漢字
+        function isKanjiCharacter(char) {
+          const code = char.charCodeAt(0);
+          // CJK統一漢字範圍：0x4E00-0x9FFF
+          // CJK擴展A：0x3400-0x4DBF
+          return (code >= 0x4E00 && code <= 0x9FFF) || 
+                 (code >= 0x3400 && code <= 0x4DBF);
+        }
+        
+        // 輔助函數：檢查是否為片假名
+        function isKatakana(text) {
+          return /[\u30A0-\u30FF]/.test(text);
+        }
+        
+        // 簡單的平假名轉換（備用方案）
+        function addSimpleFurigana(text) {
+          if (!text) return text;
+          
+          let result = '';
+          for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            
+            // 如果是漢字，嘗試用Wanakana轉換
+            if (isKanjiCharacter(char)) {
+              try {
+                const reading = wanakana.toHiragana(char);
+                if (reading !== char) {
+                  result += `<ruby>${escapeHtml(char)}<rt>${escapeHtml(reading)}</rt></ruby>`;
+                } else {
+                  result += escapeHtml(char);
+                }
+              } catch (error) {
+                result += escapeHtml(char);
+              }
+            }
+            // 如果是片假名，轉換為平假名
+            else if (isKatakana(char)) {
+              const hiragana = wanakana.toHiragana(char);
+              result += `<ruby>${escapeHtml(char)}<rt>${escapeHtml(hiragana)}</rt></ruby>`;
+            }
+            // 其他字符
+            else {
+              result += escapeHtml(char);
+            }
+          }
+          
+          return result;
+        }
+        
+        // 切換平假名顯示
+        async function toggleFurigana() {
+          if (furiganaEnabled) {
+            // 關閉平假名
+            furiganaEnabled = false;
+            document.getElementById('furiganaBtn').classList.remove('active');
+            document.getElementById('furiganaBtn').textContent = '添加平假名';
+            
+            // 恢復原始文本
+            const container = document.getElementById('subtitles');
+            const textBoxes = container.querySelectorAll('.text-box .japanese-text');
+            
+            textBoxes.forEach(textBox => {
+              const originalText = textBox.dataset.original;
+              if (originalText) {
+                textBox.innerHTML = escapeHtml(originalText);
+                textBox.parentElement.classList.remove('has-furigana');
+              }
+            });
+            
+            showGlobalStatus('已隱藏平假名', 2000);
+          } else {
+            // 啟用平假名
+            furiganaEnabled = true;
+            document.getElementById('furiganaBtn').classList.add('active');
+            document.getElementById('furiganaBtn').textContent = '隱藏平假名';
+            
+            showGlobalStatus('正在添加平假名...', 3000);
+            updateProgress(10, '開始添加平假名');
+            
+            const container = document.getElementById('subtitles');
+            const textBoxes = container.querySelectorAll('.text-box .japanese-text');
+            const total = textBoxes.length;
+            let processed = 0;
+            
+            // 使用分片處理，避免阻塞UI
+            const processBatch = async (batchSize = 5) => {
+              let count = 0;
+              while (processed < total && count < batchSize) {
+                const textBox = textBoxes[processed];
+                const originalText = textBox.dataset.original;
+                if (originalText && isJapaneseText(originalText)) {
+                  try {
+                    // 使用準確的平假名轉換
+                    const furiganaHTML = addAccurateFurigana(originalText);
+                    textBox.innerHTML = furiganaHTML;
+                    textBox.parentElement.classList.add('has-furigana');
+                  } catch (error) {
+                    console.error('添加平假名錯誤:', error);
+                    // 如果準確轉換失敗，使用簡單轉換
+                    const simpleHTML = addSimpleFurigana(originalText);
+                    textBox.innerHTML = simpleHTML;
+                    textBox.parentElement.classList.add('has-furigana');
+                  }
+                }
+                processed++;
+                count++;
+                updateProgress(10 + (processed / total * 80), `正在處理 ${processed}/${total}`);
+                
+                // 每處理5個稍作暫停，避免阻塞UI
+                if (count % 5 === 0) {
+                  await new Promise(resolve => setTimeout(resolve, 10));
+                }
+              }
+              
+              if (processed < total) {
+                setTimeout(() => processBatch(batchSize), 10);
+              } else {
+                updateProgress(100, '平假名添加完成');
+                showGlobalStatus('已為所有日語文字添加平假名', 2000);
+              }
+            };
+            
+            await processBatch(5);
+          }
+        }
+        
+        // ==================== 解析器函數 ====================
+        // 修改SRT解析器，保留時間碼信息
+        function parseSRT(content) {
+          if (!content) return [];
+          const blocks = content.replace(/\r/g, '').split(/\n\n+/);
+          const out = [];
+          
+          blocks.forEach(block => {
+            const lines = block.split('\n').filter(l => l.trim() !== '');
+            if (lines.length >= 3) {
+              const index = parseInt(lines[0]);
+              const timecode = lines[1];
+              const textLines = lines.slice(2);
+              
+              // 解析時間碼
+              const timeMatch = timecode.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
+              if (timeMatch) {
+                out.push({
+                  index: index,
+                  startTime: timeMatch[1],
+                  endTime: timeMatch[2],
+                  text: textLines.join(' ')
+                });
+              } else {
+                out.push({
+                  index: index,
+                  startTime: '',
+                  endTime: '',
+                  text: textLines.join(' ')
+                });
+              }
+            }
+          });
+          
+          return out;
+        }
+        
+        // 修改ASS解析器，保留時間碼信息
+        function parseASS(content) {
+          if (!content) return [];
+          const lines = content.replace(/\r/g, '').split('\n');
+          const dialogues = lines.filter(l => l.trim().startsWith('Dialogue:'));
+          
+          return dialogues.map((line, index) => {
+            const parts = line.split(',');
+            if (parts.length >= 10) {
+              const startTime = parts[1];
+              const endTime = parts[2];
+              const text = parts.slice(9).join(',').replace(/\\N/g, ' ').replace(/\{.*?\}/g, '').trim();
+              
+              return {
+                index: index + 1,
+                startTime: startTime,
+                endTime: endTime,
+                text: text
+              };
+            }
+            return {
+              index: index + 1,
+              startTime: '',
+              endTime: '',
+              text: ''
+            };
+          }).filter(item => item.text);
+        }
+        
+        function parseTXT(content) {
+          if (!content) return [];
+          return content.split('\n').map(l => l.trim()).filter(l => l !== '').map((l, i) => ({
+            index: i + 1,
+            text: l
+          }));
+        }
+        
+        function parseDOCX(arrayBuffer, callback) {
+          updateProgress(30, '解析 DOCX 文件中...');
+          
+          mammoth.convertToHtml({ arrayBuffer }).then(result => {
+            const temp = document.createElement('div');
+            temp.innerHTML = result.value || '';
+            const ps = Array.from(temp.querySelectorAll('p')).map(p => p.textContent.trim()).filter(t => t !== '');
+            callback(ps.map((t, i) => ({
+              index: i + 1,
+              text: t
+            })));
+            updateProgress(100, 'DOCX 解析完成');
+          }).catch(err => {
+            showError('DOCX 解析失敗：' + (err && err.message ? err.message : err));
+            updateProgress(0);
           });
         }
         
-        // 根据当前播放时间更新字幕的高亮状态，并自动滚动
-        function updateSubtitles() {
-          const offset = parseFloat(timeOffsetInput.value) || 0;
-          const displayTime = currentTime + offset;
-          subtitles.forEach((sub, idx) => {
-            const li = subListUl.children[idx];
-            if (displayTime >= sub.start && displayTime <= sub.end) {
-              li.classList.add("active");
-              li.scrollIntoView({ block: "center", behavior: "smooth" });
-            } else {
-              li.classList.remove("active");
+        function parsePDF(arrayBuffer, callback) {
+          updateProgress(20, '載入 PDF 文件中...');
+          
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+          
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          
+          loadingTask.promise.then(pdf => {
+            updateProgress(40, `PDF 共 ${pdf.numPages} 頁，正在解析...`);
+            
+            const pagePromises = [];
+            for (let i = 1; i <= pdf.numPages; i++) {
+              pagePromises.push(
+                pdf.getPage(i).then(page => 
+                  page.getTextContent().then(textContent => {
+                    const items = textContent.items || [];
+                    let lines = [], current = [], lastY = null;
+                    
+                    items.forEach(item => {
+                      const y = (item.transform && item.transform[5] != null) ? item.transform[5] : null;
+                      
+                      if (lastY === null || y === null || Math.abs(y - lastY) < 5) {
+                        current.push(item.str);
+                      } else {
+                        if (current.length) lines.push(current.join(' '));
+                        current = [item.str];
+                      }
+                      lastY = y;
+                    });
+                    
+                    if (current.length) lines.push(current.join(' '));
+                    return lines.join('\n');
+                  })
+                )
+              );
             }
+            
+            Promise.all(pagePromises).then(pages => {
+              updateProgress(80, '整理 PDF 內容...');
+              
+              const subtitles = pages.filter(p => p && p.trim() !== '').flatMap(p => 
+                p.split('\n').map(line => line.trim()).filter(s => s !== '')
+              );
+              
+              callback(subtitles.map((text, i) => ({
+                index: i + 1,
+                text: text
+              })));
+              updateProgress(100, 'PDF 解析完成');
+            });
+          }).catch(err => {
+            showError('PDF 解析失敗：' + (err && err.message ? err.message : err));
+            updateProgress(0);
           });
         }
         
-        // 模拟视频播放进度，每 100 毫秒递增 0.1 秒
-        function startTimer() {
-          timer = setInterval(function() {
-            currentTime += 0.1;
-            updateSubtitles();
-          }, 100);
-        }
-        function stopTimer() {
-          clearInterval(timer);
-          timer = null;
-        }
-        playBtn.addEventListener("click", function() {
-          if (!timer) {
-            startTimer();
-            playBtn.disabled = true;
-            pauseBtn.disabled = false;
+        // ==================== 快速生成字幕行HTML ====================
+        function createSubtitleRowHTML(subtitle, index) {
+          const hasNote = notesData[index] ? 'has-note' : '';
+          const noteContent = notesData[index] || '';
+          const noteHasContent = noteContent ? 'has-content' : '';
+          const escapedJapanese = escapeHtml(subtitle.japanese || '');
+          const escapedChinese = escapeHtml(subtitle.chinese || '');
+          const escapedNote = escapeHtml(noteContent);
+          
+          // 構建日語部分HTML
+          let japaneseHTML = `<div class="japanese-text" data-original="${escapeHtml(subtitle.japanese || '')}">${escapedJapanese}</div>`;
+          
+          // 如果有中文翻譯，添加中文部分
+          let chineseHTML = '';
+          if (subtitle.chinese && subtitle.chinese.trim() !== '') {
+            chineseHTML = `<div class="chinese-text">${escapedChinese}</div>`;
           }
-        });
-        pauseBtn.addEventListener("click", function() {
-          if (timer) {
-            stopTimer();
-            playBtn.disabled = false;
-            pauseBtn.disabled = true;
-          }
-        });
-        function jumpToSubtitle(time) {
-          const offset = parseFloat(timeOffsetInput.value) || 0;
-          currentTime = time - offset;
-          updateSubtitles();
-        }
-        
-        /* 
-           扩展支持更多影视网站：
-           getEmbedUrl 根据用户输入的链接判断来源，目前支持：
-             - 哔哩哔哩（自动提取 BV 号，不再使用 cid 参数）
-             - YouTube（支持 www.youtube.com 和 youtu.be 链接）
-             - 泰剧网（如 https://i.taijuwang.com/v/93064.html，可直接嵌入观看）
-           注意：部分网站可能由于版权或嵌入政策限制，无法直接嵌入。
-        */
-        function getEmbedUrl(inputUrl) {
-          // 如果已是嵌入地址，则直接返回
-          if (inputUrl.indexOf("player.bilibili.com") !== -1) {
-            return inputUrl;
-          }
-          // 泰剧网支持：直接返回输入链接
-          if (inputUrl.indexOf("taijuwang.com") !== -1) {
-            return inputUrl;
-          }
-          // 哔哩哔哩支持：自动提取 BV 号
-          if (inputUrl.indexOf("bilibili.com") !== -1) {
-            const bvidMatch = inputUrl.match(/\/(BV[\w\d]+)/);
-            if (bvidMatch && bvidMatch[1]) {
-              const bvid = bvidMatch[1];
-              return "https://player.bilibili.com/player.html?bvid=" + bvid + "&page=1";
-            }
-          }
-          // YouTube 支持 - 标准链接
-          if (inputUrl.indexOf("youtube.com") !== -1) {
-            try {
-              const urlObj = new URL(inputUrl);
-              const videoId = urlObj.searchParams.get("v");
-              if (videoId) return "https://www.youtube.com/embed/" + videoId;
-            } catch (e) {
-              console.error("Invalid YouTube URL", e);
-            }
-          }
-          // YouTube 支持 - 短链接
-          if (inputUrl.indexOf("youtu.be") !== -1) {
-            const parts = inputUrl.split("/");
-            const videoId = parts[parts.length - 1];
-            if (videoId) return "https://www.youtube.com/embed/" + videoId;
-          }
-          // 其它网站……
-          return inputUrl;
+          
+          // 如果有時間碼，添加到data屬性
+          const timecodeAttr = subtitle.startTime ? `data-start="${subtitle.startTime}" data-end="${subtitle.endTime}"` : '';
+          
+          return `<div class="row" data-index="${index}" ${timecodeAttr}>
+              <div class="subtitle ${hasNote}">
+                <div class="text-box" data-original="${escapeHtml(subtitle.japanese || '')}">
+                  ${japaneseHTML}
+                  ${chineseHTML}
+                </div>
+                <div class="note-area ${hasNote}">
+                  <button class="add-note-btn" data-index="${index}">+</button>
+                  <div class="note-container ${hasNote}">
+                    <textarea class="note-box ${noteHasContent} ${hasNote ? 'show' : ''} ${hasNote ? 'activated' : ''}" data-index="${index}" placeholder="">${escapedNote}</textarea>
+                  </div>
+                  <button class="close-note-btn" data-index="${index}">×</button>
+                </div>
+              </div>
+            </div>`;
         }
         
-        // 更新视频播放：将用户输入链接转换为对应的嵌入地址
-        function updateVideo() {
-          const videoUrl = document.getElementById("videoUrl").value.trim();
-          if (videoUrl === "") {
-            alert("请输入有效的视频链接。");
+        // ==================== 批量渲染所有字幕行 ====================
+        function renderAllSubtitles(subtitles) {
+          const container = document.getElementById('subtitles');
+          const totalRows = subtitles.length;
+          
+          container.innerHTML = '';
+          
+          if (totalRows === 0) {
+            updateFileInfo('沒有字幕內容', 3000);
             return;
           }
-          const embedUrl = getEmbedUrl(videoUrl);
-          document.getElementById("videoPlayer").src = embedUrl;
+          
+          updateProgress(0, '開始渲染字幕...');
+          
+          let html = '';
+          for (let i = 0; i < totalRows; i++) {
+            html += createSubtitleRowHTML(subtitles[i], i);
+          }
+          
+          container.innerHTML = html;
+          
+          updateProgress(100, `已渲染 ${totalRows} 行字幕`);
+          
+          setTimeout(() => {
+            const noteBoxes = container.querySelectorAll('.note-box');
+            const addNoteBtns = container.querySelectorAll('.add-note-btn');
+            const closeNoteBtns = container.querySelectorAll('.close-note-btn');
+            
+            addNoteBtns.forEach((btn, i) => {
+              const index = parseInt(btn.dataset.index);
+              const subtitleDiv = btn.closest('.subtitle');
+              const noteArea = btn.closest('.note-area');
+              const noteContainer = noteArea.querySelector('.note-container');
+              const noteBox = noteArea.querySelector('.note-box');
+              const closeNoteBtn = noteArea.querySelector('.close-note-btn');
+              
+              setupAddNoteBtnEvents(btn, subtitleDiv, noteArea, noteContainer, noteBox, closeNoteBtn, index);
+            });
+            
+            closeNoteBtns.forEach((btn, i) => {
+              const index = parseInt(btn.dataset.index);
+              const noteBox = btn.closest('.note-area').querySelector('.note-box');
+              
+              setupCloseNoteBtnEvents(btn, noteBox);
+            });
+            
+            noteBoxes.forEach((noteBox, i) => {
+              const index = parseInt(noteBox.dataset.index);
+              const subtitleDiv = noteBox.closest('.subtitle');
+              const textBox = subtitleDiv.querySelector('.text-box');
+              const noteArea = noteBox.closest('.note-area');
+              const noteContainer = noteArea.querySelector('.note-container');
+              const addNoteBtn = noteArea.querySelector('.add-note-btn');
+              const closeNoteBtn = noteArea.querySelector('.close-note-btn');
+              
+              setupNoteBoxEvents(noteBox, subtitleDiv, textBox, noteArea, noteContainer, addNoteBtn, closeNoteBtn, index);
+              
+              if (noteBox.value && noteBox.value.trim()) {
+                setTimeout(() => {
+                  autoResizeTextarea(noteBox);
+                }, 10);
+              }
+              
+              if (noteBox.value && noteBox.value.trim() && noteBox.classList.contains('show')) {
+                closeNoteBtn.classList.add('show');
+              }
+            });
+            
+            // 如果平假名已啟用，重新應用
+            if (furiganaEnabled) {
+              // 延遲執行，等待DOM完全加載
+              setTimeout(async () => {
+                await toggleFurigana();
+              }, 100);
+            }
+            
+            // 應用雙語顯示設置
+            if (!bilingualEnabled) {
+              document.body.classList.add('single-language');
+            }
+            
+            // 統計信息
+            const bilingualCount = subtitles.filter(s => s.isBilingual).length;
+            const singleCount = subtitles.length - bilingualCount;
+            
+            updateFileInfo(`已加載 ${subtitles.length} 行字幕（${bilingualCount} 行雙語，${singleCount} 行單語）`, 3000);
+          }, 0);
         }
-        document.getElementById("loadVideo").addEventListener("click", updateVideo);
+        
+        // ==================== 設置加號按鈕事件 ====================
+        function setupAddNoteBtnEvents(btn, subtitleDiv, noteArea, noteContainer, noteBox, closeNoteBtn, index) {
+          btn.addEventListener('click', function() {
+            closeCurrentNoteBox();
+            
+            noteBox.classList.add('show', 'activated');
+            noteContainer.classList.add('has-note');
+            noteArea.classList.add('has-note');
+            subtitleDiv.classList.add('has-note');
+            noteBox.focus();
+            
+            btn.style.display = 'none';
+            closeNoteBtn.classList.add('show');
+            
+            currentOpenNoteBox = noteBox;
+            
+            setTimeout(() => {
+              autoResizeTextarea(noteBox);
+            }, 10);
+            
+            showGlobalStatus('筆記框已打開，可以拖曳文字或輸入內容', 2000);
+          });
+        }
+        
+        // ==================== 設置關閉按鈕事件 ====================
+        function setupCloseNoteBtnEvents(btn, noteBox) {
+          btn.addEventListener('click', function() {
+            const subtitleDiv = noteBox.closest('.subtitle');
+            const noteArea = noteBox.closest('.note-area');
+            const noteContainer = noteArea.querySelector('.note-container');
+            const addNoteBtn = noteArea.querySelector('.add-note-btn');
+            
+            const trimmedValue = noteBox.value.trim();
+            const index = parseInt(noteBox.dataset.index);
+            
+            if (trimmedValue) {
+              notesData[index] = trimmedValue;
+              noteBox.classList.add('has-content');
+              subtitleDiv.classList.add('has-note');
+              noteArea.classList.add('has-note');
+              noteContainer.classList.add('has-note');
+              
+              noteBox.classList.remove('activated');
+              noteBox.classList.add('show');
+              addNoteBtn.style.display = 'none';
+              btn.classList.remove('show');
+            } else {
+              delete notesData[index];
+              noteBox.classList.remove('has-content', 'show', 'activated');
+              subtitleDiv.classList.remove('has-note');
+              noteArea.classList.remove('has-note');
+              noteContainer.classList.remove('has-note');
+              
+              addNoteBtn.style.display = 'flex';
+              btn.classList.remove('show');
+            }
+            
+            if (currentOpenNoteBox === noteBox) {
+              currentOpenNoteBox = null;
+            }
+            
+            updateNoteCount();
+            
+            showGlobalStatus('筆記框已關閉', 1500);
+          });
+        }
+        
+        // ==================== 設置筆記框事件 ====================
+        function setupNoteBoxEvents(noteBox, subtitleDiv, textBox, noteArea, noteContainer, addNoteBtn, closeNoteBtn, index) {
+          noteBox.addEventListener('input', function() {
+            autoResizeTextarea(this);
+          });
+          
+          noteBox.addEventListener('focus', function() {
+            if (currentOpenNoteBox && currentOpenNoteBox !== noteBox) {
+              closeCurrentNoteBox();
+            }
+            
+            noteBox.classList.add('activated');
+            currentOpenNoteBox = noteBox;
+            closeNoteBtn.classList.add('show');
+            
+            setTimeout(() => {
+              autoResizeTextarea(this);
+            }, 10);
+            
+            if (noteBox.value.trim()) {
+              noteBox.classList.remove('has-content');
+            }
+          });
+        
+          noteBox.addEventListener('blur', debounce(function() {
+            if (currentOpenNoteBox !== noteBox) {
+              const trimmedValue = noteBox.value.trim();
+              
+              if (trimmedValue) {
+                notesData[index] = trimmedValue;
+                noteBox.classList.add('has-content');
+                subtitleDiv.classList.add('has-note');
+                noteArea.classList.add('has-note');
+                noteContainer.classList.add('has-note');
+                
+                noteBox.classList.add('show');
+                addNoteBtn.style.display = 'none';
+                closeNoteBtn.classList.add('show');
+                
+                showGlobalStatus(`第 ${index + 1} 行筆記已保存`, 1500);
+              } else {
+                if (noteBox.classList.contains('activated')) {
+                  delete notesData[index];
+                  noteBox.classList.remove('has-content');
+                  subtitleDiv.classList.remove('has-note');
+                  noteArea.classList.remove('has-note');
+                  noteContainer.classList.remove('has-note');
+                }
+              }
+              
+              updateNoteCount();
+            }
+          }, 500));
+        
+          noteBox.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              noteBox.blur();
+            }
+          });
+        
+          textBox.addEventListener('dblclick', function() {
+            if (!noteBox.classList.contains('show')) {
+              addNoteBtn.click();
+            } else {
+              noteBox.focus();
+              noteBox.selectionStart = noteBox.value.length;
+            }
+          });
+          
+          textBox.addEventListener('mousedown', function(e) {
+            this.style.userSelect = 'text';
+          });
+          
+          noteBox.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#4CAF50';
+            this.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.5)';
+          });
+          
+          noteBox.addEventListener('dragleave', function(e) {
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+          });
+          
+          noteBox.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+            
+            const text = e.dataTransfer.getData('text/plain');
+            if (text) {
+              const startPos = this.selectionStart;
+              const endPos = this.selectionEnd;
+              const currentValue = this.value;
+              
+              this.value = currentValue.substring(0, startPos) + text + currentValue.substring(endPos);
+              
+              this.dispatchEvent(new Event('input'));
+              
+              closeNoteBtn.classList.add('show');
+              
+              showGlobalStatus('文字已拖曳到筆記框', 1500);
+            }
+          });
+        }
+        
+        // ==================== 顯示字幕 ====================
+        function displaySubtitles(subtitles, fileName) {
+          currentFileName = fileName || null;
+          allSubtitles = subtitles;
+          noteCount = 0;
+          
+          const container = document.getElementById('subtitles');
+          
+          if (!subtitles || subtitles.length === 0) {
+            container.innerHTML = '';
+            updateFileInfo('沒有字幕內容', 3000);
+            return;
+          }
+          
+          showLoading(`正在加載 ${subtitles.length} 行字幕...`);
+          
+          setTimeout(() => {
+            // 處理中日雙語字幕
+            processedSubtitles = processBilingualSubtitles(subtitles);
+            
+            // 統計雙語行數
+            const bilingualCount = processedSubtitles.filter(s => s.isBilingual).length;
+            const singleCount = processedSubtitles.length - bilingualCount;
+            
+            renderAllSubtitles(processedSubtitles);
+            updateNoteCount();
+            
+            // 顯示統計信息
+            updateFileInfo(`共 ${subtitles.length} 行，合併為 ${processedSubtitles.length} 行（${bilingualCount} 行雙語，${singleCount} 行單語）`, 4000);
+          }, 10);
+        }
+        
+        // ==================== 文件上傳處理 ====================
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          
+          const ext = (file.name.split('.').pop() || '').toLowerCase();
+          const reader = new FileReader();
+          
+          reader.onerror = () => {
+            showError('讀取檔案時發生錯誤');
+            updateProgress(0);
+          };
+          
+          reader.onload = (ev) => {
+            try {
+              currentFileName = file.name;
+              updateProgress(10, '開始處理文件...');
+              
+              if (ext === 'srt') {
+                const subtitles = parseSRT(ev.target.result);
+                displaySubtitles(subtitles, file.name);
+                updateProgress(100, 'SRT 解析完成');
+              } else if (ext === 'ass') {
+                const subtitles = parseASS(ev.target.result);
+                displaySubtitles(subtitles, file.name);
+                updateProgress(100, 'ASS 解析完成');
+              } else if (ext === 'txt') {
+                const subtitles = parseTXT(ev.target.result);
+                displaySubtitles(subtitles, file.name);
+                updateProgress(100, 'TXT 解析完成');
+              } else if (ext === 'docx') {
+                parseDOCX(ev.target.result, subs => {
+                  displaySubtitles(subs, file.name);
+                });
+              } else if (ext === 'pdf') {
+                parsePDF(ev.target.result, subs => {
+                  displaySubtitles(subs, file.name);
+                });
+              } else {
+                showError('不支援的檔案格式：' + ext);
+                updateProgress(0);
+              }
+            } catch (err) {
+              showError('解析時發生錯誤：' + (err && err.message ? err.message : err));
+              updateProgress(0);
+            }
+          };
+          
+          if (ext === 'docx' || ext === 'pdf') {
+            reader.readAsArrayBuffer(file);
+          } else {
+            reader.readAsText(file, 'utf-8');
+          }
+        });
+        
+        // ==================== 導入筆記功能 ====================
+        document.getElementById('importBtn').addEventListener('click', function() {
+          if (allSubtitles.length === 0) {
+            alert('請先加載字幕文件，再導入筆記');
+            return;
+          }
+          
+          document.getElementById('importFileInput').click();
+        });
+        
+        document.getElementById('importFileInput').addEventListener('change', function(e) {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          
+          const ext = (file.name.split('.').pop() || '').toLowerCase();
+          if (ext !== 'html') {
+            showError('請選擇HTML文件（導出的筆記文件）');
+            return;
+          }
+          
+          const reader = new FileReader();
+          
+          reader.onerror = () => {
+            showError('讀取筆記文件時發生錯誤');
+          };
+          
+          reader.onload = (ev) => {
+            try {
+              const htmlContent = ev.target.result;
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(htmlContent, 'text/html');
+              
+              const exportItems = doc.querySelectorAll('.export-item');
+              
+              if (exportItems.length === 0) {
+                showError('無法識別的筆記格式，請確保這是從本工具導出的筆記文件');
+                return;
+              }
+              
+              let importedCount = 0;
+              let skippedCount = 0;
+              
+              exportItems.forEach(item => {
+                const subtitleEl = item.querySelector('.export-note-subtitle');
+                const noteEl = item.querySelector('.export-note-content');
+                
+                if (subtitleEl && noteEl) {
+                  const subtitleText = subtitleEl.textContent.trim();
+                  const noteText = noteEl.textContent.trim();
+                  
+                  if (subtitleText && noteText) {
+                    // 在processedSubtitles中查找匹配
+                    const matchIndex = processedSubtitles.findIndex(sub => 
+                      sub.japanese === subtitleText || sub.chinese === subtitleText || sub.originalText === subtitleText
+                    );
+                    
+                    if (matchIndex !== -1) {
+                      notesData[matchIndex] = noteText;
+                      importedCount++;
+                    } else {
+                      skippedCount++;
+                    }
+                  }
+                }
+              });
+              
+              if (importedCount > 0) {
+                renderAllSubtitles(processedSubtitles);
+                updateNoteCount();
+                
+                showGlobalStatus(`成功導入 ${importedCount} 條筆記${skippedCount > 0 ? `，${skippedCount} 條未找到匹配字幕` : ''}`, 4000);
+              } else {
+                showGlobalStatus('未成功導入任何筆記，請檢查字幕文件是否匹配', 3000);
+              }
+              
+            } catch (err) {
+              showError('解析筆記文件時發生錯誤：' + (err && err.message ? err.message : err));
+            }
+          };
+          
+          reader.readAsText(file, 'utf-8');
+          e.target.value = '';
+        });
+        
+        // ==================== 搜索功能 ====================
+        document.getElementById('searchBox').addEventListener('input', function(){
+          const q = this.value.trim();
+          const rows = Array.from(document.querySelectorAll('.row'));
+          
+          if (!q) {
+            rows.forEach(row => {
+              const japaneseDiv = row.querySelector('.subtitle .text-box .japanese-text');
+              const chineseDiv = row.querySelector('.subtitle .text-box .chinese-text');
+              if (japaneseDiv && japaneseDiv.dataset.original) {
+                // 如果已經添加了平假名，需要重新添加
+                if (furiganaEnabled) {
+                  // 保持平假名狀態，重新轉換
+                  try {
+                    const furiganaHTML = addAccurateFurigana(japaneseDiv.dataset.original);
+                    japaneseDiv.innerHTML = furiganaHTML;
+                  } catch (error) {
+                    japaneseDiv.innerHTML = escapeHtml(japaneseDiv.dataset.original);
+                  }
+                } else {
+                  japaneseDiv.innerHTML = escapeHtml(japaneseDiv.dataset.original);
+                }
+              }
+              if (chineseDiv) {
+                chineseDiv.innerHTML = escapeHtml(chineseDiv.textContent || '');
+              }
+              row.style.display = '';
+            });
+            return;
+          }
+          
+          const regex = new RegExp('(' + escapeRegExp(q) + ')', 'gi');
+          let matchCount = 0;
+          
+          rows.forEach((row, idx) => {
+            const japaneseDiv = row.querySelector('.subtitle .text-box .japanese-text');
+            const chineseDiv = row.querySelector('.subtitle .text-box .chinese-text');
+            
+            let found = false;
+            
+            if (japaneseDiv) {
+              // 獲取原始文本進行搜索
+              const original = japaneseDiv.dataset.original || japaneseDiv.textContent || '';
+              if (original.match(regex)) {
+                // 如果找到了匹配，並且有平假名，需要重新添加平假名並高亮
+                if (furiganaEnabled) {
+                  try {
+                    const furiganaHTML = addAccurateFurigana(original);
+                    const highlighted = furiganaHTML.replace(regex, '<span class="highlight">$1</span>');
+                    japaneseDiv.innerHTML = highlighted;
+                  } catch (error) {
+                    japaneseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
+                  }
+                } else {
+                  japaneseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
+                }
+                found = true;
+              }
+            }
+            
+            if (chineseDiv) {
+              const original = chineseDiv.textContent || '';
+              if (original.match(regex)) {
+                chineseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
+                found = true;
+              }
+            }
+            
+            if (found) {
+              row.style.display = '';
+              matchCount++;
+              
+              if (idx === 0) {
+                setTimeout(() => {
+                  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+              }
+            } else {
+              row.style.display = 'none';
+            }
+          });
+          
+          if (matchCount > 0) {
+            showGlobalStatus(`找到 ${matchCount} 個匹配結果`, 3000);
+          } else if (q) {
+            showGlobalStatus(`未找到匹配內容`, 2000);
+          }
+        });
+        
+        // ==================== 導出功能 ====================
+        document.getElementById('exportBtn').addEventListener('click', function() {
+          const notesWithContent = Object.entries(notesData)
+            .filter(([index, note]) => note && note.trim() !== '')
+            .sort(([a], [b]) => a - b);
+          
+          if (notesWithContent.length === 0) {
+            alert('沒有筆記可匯出');
+            return;
+          }
+          
+          const itemsHtml = notesWithContent.map(([index, note], i) => {
+            const num = i + 1;
+            const subtitle = processedSubtitles[index];
+            let subtitleText = '';
+            
+            if (subtitle) {
+              if (subtitle.chinese && subtitle.chinese.trim() !== '') {
+                subtitleText = `${subtitle.japanese} | ${subtitle.chinese}`;
+              } else {
+                subtitleText = subtitle.japanese;
+              }
+            }
+            
+            return `
+              <div class="export-item">
+                <div class="export-header">
+                  <div class="export-number">${num}.</div>
+                  <div class="export-note-subtitle">${escapeHtml(subtitleText)}</div>
+                </div>
+                <div class="export-note-content">${escapeHtml(note.trim())}</div>
+              </div>
+            `;
+          }).join('\n<hr/>\n');
+          
+          const html = `<!doctype html>
+            <html lang="zh">
+            <head>
+              <meta charset="utf-8">
+              <title>${escapeHtml(currentFileName || 'notes')} - 筆記匯出</title>
+              <style>
+                body{font-family:Arial,sans-serif;padding:20px;color:#222;background:#fff}
+                .export-item{margin-bottom:20px}
+                .export-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+                .export-number{color:#333;min-width:28px;font-weight:bold}
+                .export-note-subtitle{color:#222;font-weight:normal;line-height:1.4}
+                .export-note-content{color:#e67e22;margin:0;white-space:pre-wrap;line-height:1.5}
+                hr{border:none;border-top:1px solid #eee;margin:20px 0}
+              </style>
+            </head>
+            <body>
+              <h2>${escapeHtml(currentFileName || '字幕筆記')}</h2>
+              <p>共 ${notesWithContent.length} 條筆記，導出時間: ${new Date().toLocaleString()}</p>
+              ${itemsHtml}
+            </body>
+            </html>`;
+          
+          const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${(currentFileName || 'notes').replace(/\.[^/.]+$/, "")}_筆記導出.html`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          
+          showGlobalStatus(`已導出 ${notesWithContent.length} 條筆記`, 3000);
+        });
+        
+        // ==================== 功能按鈕事件監聽 ====================
+        document.getElementById('bilingualBtn').addEventListener('click', toggleBilingualDisplay);
+        document.getElementById('furiganaBtn').addEventListener('click', toggleFurigana);
+        
+        // ==================== 頁面離開確認 ====================
+        window.addEventListener('beforeunload', function(e) {
+          if (noteCount > 0) {
+            e.preventDefault();
+            e.returnValue = `您有 ${noteCount} 條未導出的筆記，確定要離開嗎？`;
+            return e.returnValue;
+          }
+        });
+        
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', function() {
+          updateFileInfo('請上傳字幕文件（支援 .srt, .ass, .txt, .docx, .pdf）', 5000);
+          
+          // 初始化按鈕狀態
+          document.getElementById('bilingualBtn').classList.add('active');
+          document.getElementById('furiganaBtn').classList.remove('active');
+          
+          // 測試Wanakana庫是否加載成功
+          setTimeout(() => {
+            if (typeof wanakana === 'undefined') {
+              console.error('Wanakana庫未正確加載，平假名功能將無法使用');
+              showGlobalStatus('警告：平假名庫加載失敗，平假名功能可能無法使用', 4000);
+            } else {
+              console.log('Wanakana庫已成功加載');
+            }
+          }, 1000);
+        });
     </script>
 </body>
 
