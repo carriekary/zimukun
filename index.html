@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>小野字幕君 - 中日雙語版（準確平假名）</title>
+    <title>小野字幕君 - 中日雙語字幕工具</title>
 
     <!-- DOCX 解析 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
@@ -12,12 +12,9 @@
     <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
-    <!-- Wanakana 庫 - 用於準確的平假名轉換 -->
-    <script src="https://cdn.jsdelivr.net/npm/wanakana@5.0.0/umd/wanakana.min.js"></script>
-
     <style>
         :root {
-          --header-height: 120px;
+          --header-height: 140px;
           --accent: #2c3e50;
           --subtitle-min-height: 30px;
           --gutter: 12px;
@@ -89,6 +86,88 @@
           width: 200px;
         }
         
+        /* 語言選擇器 */
+        .language-selector {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          font-size: 12px;
+        }
+        
+        .lang-option {
+          padding: 4px 8px;
+          border-radius: 4px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .lang-option.active {
+          background: #4CAF50;
+          border-color: #4CAF50;
+        }
+        
+        .lang-option:hover:not(.active) {
+          background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 文件列表 */
+        .file-list {
+          position: fixed;
+          top: var(--header-height);
+          right: 20px;
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 6px;
+          padding: 8px 12px;
+          font-size: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          z-index: 100;
+          border: 1px solid #ddd;
+          max-width: 300px;
+          display: none;
+        }
+        
+        .file-list.show {
+          display: block;
+        }
+        
+        .file-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 0;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .file-item:last-child {
+          border-bottom: none;
+        }
+        
+        .file-name {
+          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .file-lang {
+          margin-left: 8px;
+          padding: 2px 6px;
+          border-radius: 3px;
+          background: #f0f0f0;
+          font-size: 10px;
+          cursor: pointer;
+        }
+        
+        .remove-file {
+          margin-left: 8px;
+          color: #ff4444;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        
         /* 主內容 */
         main {
           padding: calc(var(--header-height) + 12px) var(--container-padding) 140px;
@@ -103,7 +182,7 @@
         /* 每行區塊 */
         .row {
           display: block;
-          margin: 5px 0;
+          margin: 3px 0;
         }
         
         .subtitle {
@@ -131,7 +210,7 @@
           border-left: 4px solid #ff9800;
         }
         
-        /* 左側文字框 - 修改為顯示中日雙語 */
+        /* 左側文字框 */
         .text-box {
           flex: 1;
           min-height: 35px;
@@ -140,7 +219,7 @@
           border: none;
           background: #f9f9f9;
           font-size: 15px;
-          line-height: 1.8; /* 增加行高以容納振假名 */
+          line-height: 1.4;
           color: #222;
           white-space: pre-wrap;
           word-break: break-word;
@@ -179,24 +258,6 @@
         .single-language .japanese-text {
           margin-bottom: 0;
           border: none;
-        }
-        
-        /* 振假名樣式 */
-        ruby {
-          ruby-align: center;
-          ruby-position: over;
-        }
-        
-        rt {
-          font-size: 0.5em;
-          color: #666;
-          opacity: 0.8;
-          font-weight: normal;
-          letter-spacing: 0;
-        }
-        
-        .text-box.has-furigana .japanese-text {
-          line-height: 2.2; /* 增加行高以顯示振假名 */
         }
         
         /* 右側區域 */
@@ -437,28 +498,6 @@
           transition: width 0.3s ease;
         }
         
-        /* 平假名按鈕 */
-        .furigana-btn {
-          background: #e74c3c;
-          color: white;
-          border: none;
-          padding: 6px 12px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 13px;
-          transition: all 0.2s ease;
-        }
-        
-        .furigana-btn:hover {
-          background: #c0392b;
-          transform: translateY(-1px);
-        }
-        
-        .furigana-btn.active {
-          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
-          background: #c0392b;
-        }
-        
         /* 雙語切換按鈕 */
         .bilingual-btn {
           background: #9b59b6;
@@ -480,10 +519,27 @@
           box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
         }
         
+        /* 合併按鈕 */
+        .merge-btn {
+          background: #3498db;
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          transition: all 0.2s ease;
+        }
+        
+        .merge-btn:hover {
+          background: #2980b9;
+          transform: translateY(-1px);
+        }
+        
         /* 小屏幕（600px-900px） */
         @media (max-width: 900px) {
           :root {
-            --header-height: 140px;
+            --header-height: 160px;
           }
           
           .header {
@@ -530,10 +586,13 @@
             font-size: 12px;
           }
           
-          .furigana-btn,
-          .bilingual-btn {
+          .bilingual-btn, .merge-btn {
             font-size: 11px;
             padding: 5px 8px;
+          }
+          
+          .language-selector {
+            font-size: 10px;
           }
           
           main {
@@ -558,30 +617,24 @@
             height: auto;
             min-height: 34px;
             font-size: 14px;
-            line-height: 1.8;
+            line-height: 1.35;
             color: #333;
             background: #fdfdfd;
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 5px;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
             transition: all 0.2s ease;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: normal;
+            word-break: break-word;
           }
           
           .text-box:hover {
             background: #fafafa;
             border-color: rgba(0, 0, 0, 0.15);
-            white-space: normal;
-            overflow: visible;
             z-index: 2;
             position: relative;
-          }
-          
-          .text-box:active {
-            white-space: normal;
-            overflow: visible;
           }
           
           .note-area {
@@ -690,6 +743,7 @@
             width: 100%;
             white-space: normal;
             overflow: visible;
+            word-break: break-word;
           }
           
           .subtitle.has-note .add-note-btn {
@@ -720,12 +774,18 @@
             min-width: 67.5px;
             box-shadow: 0 1px 6px rgba(0,0,0,0.15);
           }
+          
+          .file-list {
+            left: 10px;
+            right: 10px;
+            max-width: none;
+          }
         }
         
         /* 超小屏幕（600px以下） */
         @media (max-width: 600px) {
           :root {
-            --header-height: 170px;
+            --header-height: 190px;
           }
           
           .header {
@@ -752,14 +812,23 @@
             font-size: 10px;
           }
           
+          .language-selector {
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+          
           .text-box {
             padding: 5px 8px;
             font-size: 13px;
             min-height: 32px;
-            line-height: 1.8;
+            line-height: 1.3;
             border-color: rgba(0, 0, 0, 0.08);
             box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.04);
             margin-right: 28px;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: normal;
+            word-break: break-word;
           }
           
           .subtitle {
@@ -811,8 +880,7 @@
             box-shadow: 0 1px 4px rgba(0,0,0,0.12);
           }
           
-          .furigana-btn,
-          .bilingual-btn {
+          .bilingual-btn, .merge-btn {
             width: 100%;
             text-align: center;
             padding: 6px;
@@ -823,7 +891,7 @@
         /* 橫向屏幕優化 */
         @media (max-width: 900px) and (orientation: landscape) {
           :root {
-            --header-height: 90px;
+            --header-height: 100px;
           }
           
           .header {
@@ -860,6 +928,10 @@
             flex: 1;
             margin-right: 32px;
             padding-right: 10px;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: normal;
+            word-break: break-word;
           }
           
           .add-note-btn {
@@ -878,6 +950,8 @@
             margin-right: 0;
             padding-right: 10px;
             white-space: normal;
+            overflow: visible;
+            word-break: break-word;
           }
           
           .subtitle.has-note .add-note-btn {
@@ -911,18 +985,32 @@
 <body>
     <header class="header" role="banner">
         <div class="header-left">
-            <h1>小野字幕君 - 中日雙語版（準確平假名）</h1>
-            <p>支援：.srt / .ass / .docx / .txt / .pdf (中日雙語合併顯示)</p>
+            <h1>小野字幕君</h1>
+            <p>支援：.srt / .ass / .docx / .txt / .pdf (可上傳多個文件)</p>
         </div>
         <div class="file-search-container" role="region" aria-label="檔案與搜尋">
-            <input id="fileInput" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
+            <input id="fileInput" type="file" accept=".ass,.srt,.docx,.txt,.pdf" multiple />
             <input id="searchBox" class="search-box" type="text" placeholder="輸入搜尋內容" />
             
-            <!-- 功能按鈕 -->
-            <button id="bilingualBtn" class="bilingual-btn active">雙語顯示</button>
-            <button id="furiganaBtn" class="furigana-btn">添加平假名</button>
+            <div class="language-selector">
+                <span>語言:</span>
+                <span id="langJapanese" class="lang-option active" data-lang="ja">日文</span>
+                <span id="langChinese" class="lang-option" data-lang="zh">中文</span>
+                <span id="langAuto" class="lang-option" data-lang="auto">自動</span>
+            </div>
+            
+            <!-- 雙語切換按鈕 -->
+            <button id="bilingualBtn" class="bilingual-btn">雙語顯示</button>
+            
+            <!-- 合併按鈕 -->
+            <button id="mergeBtn" class="merge-btn" style="display:none;">合併雙語</button>
         </div>
     </header>
+
+    <!-- 文件列表 -->
+    <div class="file-list" id="fileList">
+        <div id="fileListContent"></div>
+    </div>
 
     <!-- 進度條 -->
     <div class="progress-container" id="progressContainer">
@@ -957,7 +1045,9 @@
         let noteCount = 0;
         let currentOpenNoteBox = null;
         let bilingualEnabled = true; // 默認開啟雙語顯示
-        let furiganaEnabled = false; // 平假名狀態
+        let uploadedFiles = []; // 存儲上傳的文件信息
+        let currentLanguage = 'ja'; // 當前選擇的語言: 'ja', 'zh', 'auto'
+        let fileSubtitlesMap = new Map(); // 存儲每個文件的解析結果
         
         // ==================== 工具函數 ====================
         function debounce(func, wait) {
@@ -1116,6 +1206,249 @@
           const chineseRegex = /[\u4E00-\u9FAF]/;
           const japaneseKanaRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
           return chineseRegex.test(text) && !japaneseKanaRegex.test(text);
+        }
+        
+        // ==================== 文件管理相關 ====================
+        function updateFileList() {
+          const fileList = document.getElementById('fileList');
+          const fileListContent = document.getElementById('fileListContent');
+          
+          if (uploadedFiles.length === 0) {
+            fileList.classList.remove('show');
+            return;
+          }
+          
+          fileList.classList.add('show');
+          
+          let html = '<div style="margin-bottom:8px; font-weight:bold;">已上傳文件:</div>';
+          
+          uploadedFiles.forEach((file, index) => {
+            const langLabel = file.lang === 'ja' ? '日文' : file.lang === 'zh' ? '中文' : '自動';
+            const langClass = file.lang === 'ja' ? 'lang-ja' : file.lang === 'zh' ? 'lang-zh' : 'lang-auto';
+            
+            html += `
+              <div class="file-item">
+                <div class="file-name">${escapeHtml(file.name)}</div>
+                <div class="file-lang ${langClass}" data-index="${index}">${langLabel}</div>
+                <div class="remove-file" data-index="${index}">×</div>
+              </div>
+            `;
+          });
+          
+          html += `<div style="margin-top:8px; font-size:11px; color:#666;">點擊語言標籤切換語言，點擊×移除文件</div>`;
+          
+          fileListContent.innerHTML = html;
+          
+          // 添加移除文件事件
+          document.querySelectorAll('.remove-file').forEach(btn => {
+            btn.addEventListener('click', function() {
+              const index = parseInt(this.dataset.index);
+              removeFile(index);
+            });
+          });
+          
+          // 添加語言切換事件
+          document.querySelectorAll('.file-lang').forEach(langEl => {
+            langEl.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const fileIndex = parseInt(this.dataset.index);
+              
+              // 循環切換語言: 日文 -> 中文 -> 自動 -> 日文
+              const currentLang = uploadedFiles[fileIndex].lang;
+              let newLang;
+              
+              if (currentLang === 'ja') newLang = 'zh';
+              else if (currentLang === 'zh') newLang = 'auto';
+              else newLang = 'ja';
+              
+              uploadedFiles[fileIndex].lang = newLang;
+              updateFileList();
+              showGlobalStatus(`已將文件語言設置為: ${newLang === 'ja' ? '日文' : newLang === 'zh' ? '中文' : '自動'}`);
+            });
+          });
+        }
+        
+        function removeFile(index) {
+          if (index >= 0 && index < uploadedFiles.length) {
+            const removedFile = uploadedFiles.splice(index, 1)[0];
+            fileSubtitlesMap.delete(removedFile.name);
+            updateFileList();
+            
+            // 如果還有文件，重新處理
+            if (uploadedFiles.length > 0) {
+              processAllFiles();
+            } else {
+              // 沒有文件了，清空顯示
+              document.getElementById('subtitles').innerHTML = '';
+              document.getElementById('mergeBtn').style.display = 'none';
+              updateFileInfo('請上傳字幕文件', 3000);
+            }
+            
+            showGlobalStatus(`已移除文件: ${removedFile.name}`);
+          }
+        }
+        
+        // ==================== 雙文件合併功能 ====================
+        function mergeTwoFiles() {
+          if (uploadedFiles.length < 2) {
+            showGlobalStatus('請上傳至少兩個文件進行合併', 3000);
+            return;
+          }
+          
+          showLoading('正在合併雙語字幕...');
+          
+          // 找出日文和中文文件
+          const japaneseFiles = uploadedFiles.filter(f => f.lang === 'ja' || (f.lang === 'auto' && fileContainsJapanese(f.name)));
+          const chineseFiles = uploadedFiles.filter(f => f.lang === 'zh' || (f.lang === 'auto' && fileContainsChinese(f.name)));
+          
+          if (japaneseFiles.length === 0 || chineseFiles.length === 0) {
+            showError('請確保至少有一個日文文件和一個中文文件');
+            return;
+          }
+          
+          // 使用第一個日文文件和第一個中文文件
+          const japaneseFile = japaneseFiles[0];
+          const chineseFile = chineseFiles[0];
+          
+          const japaneseSubtitles = fileSubtitlesMap.get(japaneseFile.name) || [];
+          const chineseSubtitles = fileSubtitlesMap.get(chineseFile.name) || [];
+          
+          if (japaneseSubtitles.length === 0 || chineseSubtitles.length === 0) {
+            showError('無法獲取文件內容，請重新上傳');
+            return;
+          }
+          
+          // 合併字幕
+          const mergedSubtitles = mergeSubtitlesFromTwoFiles(japaneseSubtitles, chineseSubtitles);
+          
+          // 顯示合併結果
+          displayMergedSubtitles(mergedSubtitles, `${japaneseFile.name} + ${chineseFile.name}`);
+          showGlobalStatus(`已合併 ${japaneseSubtitles.length} 行日文和 ${chineseSubtitles.length} 行中文`, 4000);
+        }
+        
+        function fileContainsJapanese(fileName) {
+          const subtitles = fileSubtitlesMap.get(fileName) || [];
+          if (subtitles.length === 0) return false;
+          
+          // 檢查前幾行是否包含日文
+          const sampleSize = Math.min(10, subtitles.length);
+          let japaneseCount = 0;
+          
+          for (let i = 0; i < sampleSize; i++) {
+            if (isJapaneseText(subtitles[i].text)) {
+              japaneseCount++;
+            }
+          }
+          
+          return japaneseCount > sampleSize / 2;
+        }
+        
+        function fileContainsChinese(fileName) {
+          const subtitles = fileSubtitlesMap.get(fileName) || [];
+          if (subtitles.length === 0) return false;
+          
+          // 檢查前幾行是否包含中文
+          const sampleSize = Math.min(10, subtitles.length);
+          let chineseCount = 0;
+          
+          for (let i = 0; i < sampleSize; i++) {
+            if (isChineseText(subtitles[i].text)) {
+              chineseCount++;
+            }
+          }
+          
+          return chineseCount > sampleSize / 2;
+        }
+        
+        function mergeSubtitlesFromTwoFiles(japaneseSubtitles, chineseSubtitles) {
+          const merged = [];
+          const maxLength = Math.max(japaneseSubtitles.length, chineseSubtitles.length);
+          
+          for (let i = 0; i < maxLength; i++) {
+            const jpSub = japaneseSubtitles[i] || { text: '' };
+            const zhSub = chineseSubtitles[i] || { text: '' };
+            
+            // 優先使用有時間碼的信息
+            const startTime = jpSub.startTime || zhSub.startTime || '';
+            const endTime = jpSub.endTime || zhSub.endTime || '';
+            
+            merged.push({
+              japanese: jpSub.text || '',
+              chinese: zhSub.text || '',
+              originalText: jpSub.text || zhSub.text || '',
+              isBilingual: !!(jpSub.text && zhSub.text),
+              startTime: startTime,
+              endTime: endTime
+            });
+          }
+          
+          return merged;
+        }
+        
+        // ==================== 顯示合併後的字幕 ====================
+        function displayMergedSubtitles(subtitles, fileName) {
+          currentFileName = fileName || null;
+          allSubtitles = subtitles;
+          processedSubtitles = subtitles; // 直接使用合併後的數據
+          notesData = {}; // 清空筆記數據
+          noteCount = 0;
+          
+          const container = document.getElementById('subtitles');
+          
+          if (!subtitles || subtitles.length === 0) {
+            container.innerHTML = '';
+            updateFileInfo('沒有字幕內容', 3000);
+            return;
+          }
+          
+          showLoading(`正在加載 ${subtitles.length} 行字幕...`);
+          
+          setTimeout(() => {
+            renderAllSubtitles(processedSubtitles);
+            updateNoteCount();
+            
+            // 統計信息
+            const bilingualCount = processedSubtitles.filter(s => s.isBilingual).length;
+            const singleCount = processedSubtitles.length - bilingualCount;
+            
+            updateFileInfo(`共 ${subtitles.length} 行字幕（${bilingualCount} 行雙語，${singleCount} 行單語）`, 4000);
+          }, 10);
+        }
+        
+        // ==================== 處理所有上傳的文件 ====================
+        function processAllFiles() {
+          if (uploadedFiles.length === 0) return;
+          
+          showLoading(`正在處理 ${uploadedFiles.length} 個文件...`);
+          
+          // 如果只有一個文件，直接處理
+          if (uploadedFiles.length === 1) {
+            const file = uploadedFiles[0];
+            const subtitles = fileSubtitlesMap.get(file.name) || [];
+            
+            if (subtitles.length > 0) {
+              // 處理單文件雙語
+              displaySubtitles(subtitles, file.name);
+            }
+            document.getElementById('mergeBtn').style.display = 'none';
+          } else {
+            // 多個文件，顯示合併按鈕
+            document.getElementById('mergeBtn').style.display = 'block';
+            
+            // 嘗試自動檢測並合併
+            const japaneseFiles = uploadedFiles.filter(f => f.lang === 'ja' || (f.lang === 'auto' && fileContainsJapanese(f.name)));
+            const chineseFiles = uploadedFiles.filter(f => f.lang === 'zh' || (f.lang === 'auto' && fileContainsChinese(f.name)));
+            
+            if (japaneseFiles.length > 0 && chineseFiles.length > 0) {
+              // 自動合併
+              setTimeout(() => {
+                mergeTwoFiles();
+              }, 500);
+            } else {
+              // 顯示文件列表，等待用戶手動合併
+              showLoading(`已上傳 ${uploadedFiles.length} 個文件，請點擊"合併雙語"按鈕`);
+            }
+          }
         }
         
         // ==================== 中日雙語合併處理 ====================
@@ -1335,183 +1668,6 @@
           // 重新渲染字幕
           if (processedSubtitles.length > 0) {
             renderAllSubtitles(processedSubtitles);
-          }
-        }
-        
-        // ==================== 準確的平假名功能（使用Wanakana庫） ====================
-        // 使用Wanakana庫來準確地為日語文本添加平假名
-        function addAccurateFurigana(text) {
-          if (!text || !text.trim()) return text;
-          
-          try {
-            // 使用Wanakana庫的tokenize函數來分詞並獲取讀音
-            const tokens = wanakana.tokenize(text);
-            
-            let result = '';
-            
-            for (const token of tokens) {
-              if (token.type === 'en' || token.type === 'other') {
-                // 英文或其他字符，直接顯示
-                result += escapeHtml(token.value);
-              } else if (token.type === 'ja') {
-                // 日語字符
-                if (isKanjiCharacter(token.value)) {
-                  // 漢字字符，嘗試獲取讀音
-                  const reading = wanakana.toHiragana(token.value, {
-                    customKanaMapping: {},
-                    IMEMode: false,
-                    useObsoleteKana: false
-                  });
-                  
-                  // 如果讀音與原字符相同（可能沒有找到讀音），則直接顯示
-                  if (reading === token.value) {
-                    result += escapeHtml(token.value);
-                  } else {
-                    // 否則添加振假名
-                    result += `<ruby>${escapeHtml(token.value)}<rt>${escapeHtml(reading)}</rt></ruby>`;
-                  }
-                } else if (isKatakana(token.value)) {
-                  // 片假名，轉換為平假名並顯示
-                  const hiragana = wanakana.toHiragana(token.value);
-                  result += `<ruby>${escapeHtml(token.value)}<rt>${escapeHtml(hiragana)}</rt></ruby>`;
-                } else {
-                  // 平假名或其他日語字符，直接顯示
-                  result += escapeHtml(token.value);
-                }
-              }
-            }
-            
-            return result;
-          } catch (error) {
-            console.error('平假名轉換錯誤:', error);
-            // 如果轉換失敗，返回原始文本
-            return escapeHtml(text);
-          }
-        }
-        
-        // 輔助函數：檢查是否為漢字
-        function isKanjiCharacter(char) {
-          const code = char.charCodeAt(0);
-          // CJK統一漢字範圍：0x4E00-0x9FFF
-          // CJK擴展A：0x3400-0x4DBF
-          return (code >= 0x4E00 && code <= 0x9FFF) || 
-                 (code >= 0x3400 && code <= 0x4DBF);
-        }
-        
-        // 輔助函數：檢查是否為片假名
-        function isKatakana(text) {
-          return /[\u30A0-\u30FF]/.test(text);
-        }
-        
-        // 簡單的平假名轉換（備用方案）
-        function addSimpleFurigana(text) {
-          if (!text) return text;
-          
-          let result = '';
-          for (let i = 0; i < text.length; i++) {
-            const char = text[i];
-            
-            // 如果是漢字，嘗試用Wanakana轉換
-            if (isKanjiCharacter(char)) {
-              try {
-                const reading = wanakana.toHiragana(char);
-                if (reading !== char) {
-                  result += `<ruby>${escapeHtml(char)}<rt>${escapeHtml(reading)}</rt></ruby>`;
-                } else {
-                  result += escapeHtml(char);
-                }
-              } catch (error) {
-                result += escapeHtml(char);
-              }
-            }
-            // 如果是片假名，轉換為平假名
-            else if (isKatakana(char)) {
-              const hiragana = wanakana.toHiragana(char);
-              result += `<ruby>${escapeHtml(char)}<rt>${escapeHtml(hiragana)}</rt></ruby>`;
-            }
-            // 其他字符
-            else {
-              result += escapeHtml(char);
-            }
-          }
-          
-          return result;
-        }
-        
-        // 切換平假名顯示
-        async function toggleFurigana() {
-          if (furiganaEnabled) {
-            // 關閉平假名
-            furiganaEnabled = false;
-            document.getElementById('furiganaBtn').classList.remove('active');
-            document.getElementById('furiganaBtn').textContent = '添加平假名';
-            
-            // 恢復原始文本
-            const container = document.getElementById('subtitles');
-            const textBoxes = container.querySelectorAll('.text-box .japanese-text');
-            
-            textBoxes.forEach(textBox => {
-              const originalText = textBox.dataset.original;
-              if (originalText) {
-                textBox.innerHTML = escapeHtml(originalText);
-                textBox.parentElement.classList.remove('has-furigana');
-              }
-            });
-            
-            showGlobalStatus('已隱藏平假名', 2000);
-          } else {
-            // 啟用平假名
-            furiganaEnabled = true;
-            document.getElementById('furiganaBtn').classList.add('active');
-            document.getElementById('furiganaBtn').textContent = '隱藏平假名';
-            
-            showGlobalStatus('正在添加平假名...', 3000);
-            updateProgress(10, '開始添加平假名');
-            
-            const container = document.getElementById('subtitles');
-            const textBoxes = container.querySelectorAll('.text-box .japanese-text');
-            const total = textBoxes.length;
-            let processed = 0;
-            
-            // 使用分片處理，避免阻塞UI
-            const processBatch = async (batchSize = 5) => {
-              let count = 0;
-              while (processed < total && count < batchSize) {
-                const textBox = textBoxes[processed];
-                const originalText = textBox.dataset.original;
-                if (originalText && isJapaneseText(originalText)) {
-                  try {
-                    // 使用準確的平假名轉換
-                    const furiganaHTML = addAccurateFurigana(originalText);
-                    textBox.innerHTML = furiganaHTML;
-                    textBox.parentElement.classList.add('has-furigana');
-                  } catch (error) {
-                    console.error('添加平假名錯誤:', error);
-                    // 如果準確轉換失敗，使用簡單轉換
-                    const simpleHTML = addSimpleFurigana(originalText);
-                    textBox.innerHTML = simpleHTML;
-                    textBox.parentElement.classList.add('has-furigana');
-                  }
-                }
-                processed++;
-                count++;
-                updateProgress(10 + (processed / total * 80), `正在處理 ${processed}/${total}`);
-                
-                // 每處理5個稍作暫停，避免阻塞UI
-                if (count % 5 === 0) {
-                  await new Promise(resolve => setTimeout(resolve, 10));
-                }
-              }
-              
-              if (processed < total) {
-                setTimeout(() => processBatch(batchSize), 10);
-              } else {
-                updateProgress(100, '平假名添加完成');
-                showGlobalStatus('已為所有日語文字添加平假名', 2000);
-              }
-            };
-            
-            await processBatch(5);
           }
         }
         
@@ -1770,14 +1926,6 @@
               }
             });
             
-            // 如果平假名已啟用，重新應用
-            if (furiganaEnabled) {
-              // 延遲執行，等待DOM完全加載
-              setTimeout(async () => {
-                await toggleFurigana();
-              }, 100);
-            }
-            
             // 應用雙語顯示設置
             if (!bilingualEnabled) {
               document.body.classList.add('single-language');
@@ -1787,7 +1935,7 @@
             const bilingualCount = subtitles.filter(s => s.isBilingual).length;
             const singleCount = subtitles.length - bilingualCount;
             
-            updateFileInfo(`已加載 ${subtitles.length} 行字幕（${bilingualCount} 行雙語，${singleCount} 行單語）`, 3000);
+            updateFileInfo(`已加載 ${subtitles.length} 行字幕（${bilingualCount} 行雙語，${singleCount} 行單語）`, 4000);
           }, 0);
         }
         
@@ -1999,57 +2147,116 @@
         
         // ==================== 文件上傳處理 ====================
         document.getElementById('fileInput').addEventListener('change', function(e) {
-          const file = e.target.files && e.target.files[0];
-          if (!file) return;
+          const files = Array.from(e.target.files);
+          if (files.length === 0) return;
           
-          const ext = (file.name.split('.').pop() || '').toLowerCase();
-          const reader = new FileReader();
+          // 清空輸入框，以便再次選擇相同文件
+          this.value = '';
           
-          reader.onerror = () => {
-            showError('讀取檔案時發生錯誤');
-            updateProgress(0);
-          };
+          updateProgress(10, `正在處理 ${files.length} 個文件...`);
           
-          reader.onload = (ev) => {
-            try {
-              currentFileName = file.name;
-              updateProgress(10, '開始處理文件...');
-              
-              if (ext === 'srt') {
-                const subtitles = parseSRT(ev.target.result);
-                displaySubtitles(subtitles, file.name);
-                updateProgress(100, 'SRT 解析完成');
-              } else if (ext === 'ass') {
-                const subtitles = parseASS(ev.target.result);
-                displaySubtitles(subtitles, file.name);
-                updateProgress(100, 'ASS 解析完成');
-              } else if (ext === 'txt') {
-                const subtitles = parseTXT(ev.target.result);
-                displaySubtitles(subtitles, file.name);
-                updateProgress(100, 'TXT 解析完成');
-              } else if (ext === 'docx') {
-                parseDOCX(ev.target.result, subs => {
-                  displaySubtitles(subs, file.name);
-                });
-              } else if (ext === 'pdf') {
-                parsePDF(ev.target.result, subs => {
-                  displaySubtitles(subs, file.name);
-                });
-              } else {
-                showError('不支援的檔案格式：' + ext);
+          files.forEach((file, fileIndex) => {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const reader = new FileReader();
+            
+            reader.onerror = () => {
+              showError(`讀取檔案 ${file.name} 時發生錯誤`);
+              updateProgress(0);
+            };
+            
+            reader.onload = (ev) => {
+              try {
+                updateProgress(20 + (fileIndex/files.length)*50, `解析文件 ${file.name}...`);
+                
+                if (ext === 'srt') {
+                  const subtitles = parseSRT(ev.target.result);
+                  fileSubtitlesMap.set(file.name, subtitles);
+                  uploadedFiles.push({
+                    name: file.name,
+                    lang: currentLanguage
+                  });
+                  
+                  // 同步處理完成後
+                  if (fileIndex === files.length - 1) {
+                    updateProgress(100, '所有文件解析完成');
+                    updateFileList();
+                    processAllFiles();
+                  }
+                } else if (ext === 'ass') {
+                  const subtitles = parseASS(ev.target.result);
+                  fileSubtitlesMap.set(file.name, subtitles);
+                  uploadedFiles.push({
+                    name: file.name,
+                    lang: currentLanguage
+                  });
+                  
+                  if (fileIndex === files.length - 1) {
+                    updateProgress(100, '所有文件解析完成');
+                    updateFileList();
+                    processAllFiles();
+                  }
+                } else if (ext === 'txt') {
+                  const subtitles = parseTXT(ev.target.result);
+                  fileSubtitlesMap.set(file.name, subtitles);
+                  uploadedFiles.push({
+                    name: file.name,
+                    lang: currentLanguage
+                  });
+                  
+                  if (fileIndex === files.length - 1) {
+                    updateProgress(100, '所有文件解析完成');
+                    updateFileList();
+                    processAllFiles();
+                  }
+                } else if (ext === 'docx') {
+                  parseDOCX(ev.target.result, subs => {
+                    fileSubtitlesMap.set(file.name, subs);
+                    uploadedFiles.push({
+                      name: file.name,
+                      lang: currentLanguage
+                    });
+                    
+                    // 最後一個文件處理完成後
+                    if (fileIndex === files.length - 1) {
+                      updateProgress(100, '所有文件解析完成');
+                      updateFileList();
+                      processAllFiles();
+                    }
+                  });
+                  return; // 異步處理，提前返回
+                } else if (ext === 'pdf') {
+                  parsePDF(ev.target.result, subs => {
+                    fileSubtitlesMap.set(file.name, subs);
+                    uploadedFiles.push({
+                      name: file.name,
+                      lang: currentLanguage
+                    });
+                    
+                    // 最後一個文件處理完成後
+                    if (fileIndex === files.length - 1) {
+                      updateProgress(100, '所有文件解析完成');
+                      updateFileList();
+                      processAllFiles();
+                    }
+                  });
+                  return; // 異步處理，提前返回
+                } else {
+                  showError('不支援的檔案格式：' + ext);
+                  updateProgress(0);
+                  return;
+                }
+              } catch (err) {
+                showError('解析時發生錯誤：' + (err && err.message ? err.message : err));
                 updateProgress(0);
               }
-            } catch (err) {
-              showError('解析時發生錯誤：' + (err && err.message ? err.message : err));
-              updateProgress(0);
+            };
+            
+            if (ext === 'docx' || ext === 'pdf') {
+              reader.readAsArrayBuffer(file);
+            } else {
+              reader.readAsText(file, 'utf-8');
             }
-          };
-          
-          if (ext === 'docx' || ext === 'pdf') {
-            reader.readAsArrayBuffer(file);
-          } else {
-            reader.readAsText(file, 'utf-8');
-          }
+          });
         });
         
         // ==================== 導入筆記功能 ====================
@@ -2146,18 +2353,7 @@
               const japaneseDiv = row.querySelector('.subtitle .text-box .japanese-text');
               const chineseDiv = row.querySelector('.subtitle .text-box .chinese-text');
               if (japaneseDiv && japaneseDiv.dataset.original) {
-                // 如果已經添加了平假名，需要重新添加
-                if (furiganaEnabled) {
-                  // 保持平假名狀態，重新轉換
-                  try {
-                    const furiganaHTML = addAccurateFurigana(japaneseDiv.dataset.original);
-                    japaneseDiv.innerHTML = furiganaHTML;
-                  } catch (error) {
-                    japaneseDiv.innerHTML = escapeHtml(japaneseDiv.dataset.original);
-                  }
-                } else {
-                  japaneseDiv.innerHTML = escapeHtml(japaneseDiv.dataset.original);
-                }
+                japaneseDiv.innerHTML = escapeHtml(japaneseDiv.dataset.original);
               }
               if (chineseDiv) {
                 chineseDiv.innerHTML = escapeHtml(chineseDiv.textContent || '');
@@ -2177,21 +2373,9 @@
             let found = false;
             
             if (japaneseDiv) {
-              // 獲取原始文本進行搜索
               const original = japaneseDiv.dataset.original || japaneseDiv.textContent || '';
               if (original.match(regex)) {
-                // 如果找到了匹配，並且有平假名，需要重新添加平假名並高亮
-                if (furiganaEnabled) {
-                  try {
-                    const furiganaHTML = addAccurateFurigana(original);
-                    const highlighted = furiganaHTML.replace(regex, '<span class="highlight">$1</span>');
-                    japaneseDiv.innerHTML = highlighted;
-                  } catch (error) {
-                    japaneseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
-                  }
-                } else {
-                  japaneseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
-                }
+                japaneseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
                 found = true;
               }
             }
@@ -2297,7 +2481,24 @@
         
         // ==================== 功能按鈕事件監聽 ====================
         document.getElementById('bilingualBtn').addEventListener('click', toggleBilingualDisplay);
-        document.getElementById('furiganaBtn').addEventListener('click', toggleFurigana);
+        
+        document.getElementById('mergeBtn').addEventListener('click', mergeTwoFiles);
+        
+        // 語言選擇器事件
+        document.querySelectorAll('.lang-option').forEach(option => {
+          option.addEventListener('click', function() {
+            // 移除所有活動狀態
+            document.querySelectorAll('.lang-option').forEach(el => {
+              el.classList.remove('active');
+            });
+            
+            // 設置當前選中的語言
+            this.classList.add('active');
+            currentLanguage = this.dataset.lang;
+            
+            showGlobalStatus(`已設置語言為: ${this.textContent}`, 2000);
+          });
+        });
         
         // ==================== 頁面離開確認 ====================
         window.addEventListener('beforeunload', function(e) {
@@ -2310,23 +2511,14 @@
         
         // ==================== 初始化 ====================
         document.addEventListener('DOMContentLoaded', function() {
-          updateFileInfo('請上傳字幕文件（支援 .srt, .ass, .txt, .docx, .pdf）', 5000);
+          updateFileInfo('請上傳字幕文件（支援 .srt, .ass, .txt, .docx, .pdf），可上傳多個文件', 5000);
           
-          // 初始化按鈕狀態
+          // 初始化雙語按鈕狀態
           document.getElementById('bilingualBtn').classList.add('active');
-          document.getElementById('furiganaBtn').classList.remove('active');
           
-          // 測試Wanakana庫是否加載成功
-          setTimeout(() => {
-            if (typeof wanakana === 'undefined') {
-              console.error('Wanakana庫未正確加載，平假名功能將無法使用');
-              showGlobalStatus('警告：平假名庫加載失敗，平假名功能可能無法使用', 4000);
-            } else {
-              console.log('Wanakana庫已成功加載');
-            }
-          }, 1000);
+          // 初始化語言選擇器
+          document.getElementById('langJapanese').classList.add('active');
         });
     </script>
 </body>
-
 </html>
