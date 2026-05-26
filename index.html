@@ -6,15 +6,13 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>小野字幕君</title>
 
-    <!-- DOCX 解析 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
 
-    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
         :root {
-          --header-height: 120px;
+          --header-height: 140px;
           --accent: #2c3e50;
           --subtitle-min-height: 30px;
           --gutter: 12px;
@@ -86,80 +84,50 @@
           width: 200px;
         }
         
-        /* 文件列表面板 - 可收合 */
-        .file-list-panel {
+        /* 語言選擇器 */
+        .language-selector {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          font-size: 12px;
+        }
+        
+        .lang-option {
+          padding: 4px 8px;
+          border-radius: 4px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .lang-option.active {
+          background: #4CAF50;
+          border-color: #4CAF50;
+        }
+        
+        .lang-option:hover:not(.active) {
+          background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 文件列表 */
+        .file-list {
           position: fixed;
           top: var(--header-height);
           right: 20px;
-          background: rgba(255, 255, 255, 0.98);
-          border-radius: 8px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 6px;
+          padding: 8px 12px;
+          font-size: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
           z-index: 100;
           border: 1px solid #ddd;
-          max-width: 350px;
-          min-width: 280px;
-          overflow: hidden;
-          transition: all 0.3s ease;
-          max-height: 70vh;
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .file-list-panel.collapsed {
-          max-height: 40px;
-          overflow: hidden;
-        }
-        
-        .file-list-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px 15px;
-          background: #f8f9fa;
-          border-bottom: 1px solid #e9ecef;
-          cursor: pointer;
-          user-select: none;
-        }
-        
-        .file-list-header:hover {
-          background: #e9ecef;
-        }
-        
-        .file-list-title {
-          font-weight: bold;
-          font-size: 14px;
-          color: #495057;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .file-count {
-          background: var(--accent);
-          color: white;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-        }
-        
-        .toggle-icon {
-          font-size: 18px;
-          color: #6c757d;
-          transition: transform 0.3s ease;
-        }
-        
-        .file-list-panel.collapsed .toggle-icon {
-          transform: rotate(180deg);
-        }
-        
-        .file-list-content {
-          padding: 15px;
-          overflow-y: auto;
-          flex: 1;
+          max-width: 300px;
           display: none;
         }
         
-        .file-list-panel:not(.collapsed) .file-list-content {
+        .file-list.show {
           display: block;
         }
         
@@ -167,13 +135,8 @@
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 8px 0;
+          padding: 4px 0;
           border-bottom: 1px solid #eee;
-          transition: background-color 0.2s;
-        }
-        
-        .file-item:hover {
-          background-color: #f8f9fa;
         }
         
         .file-item:last-child {
@@ -185,59 +148,22 @@
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          font-size: 13px;
-          color: #212529;
         }
         
         .file-lang {
           margin-left: 8px;
-          padding: 2px 8px;
-          border-radius: 4px;
-          background: #e9ecef;
-          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 3px;
+          background: #f0f0f0;
+          font-size: 10px;
           cursor: pointer;
-          color: #495057;
-          transition: all 0.2s;
-          min-width: 50px;
-          text-align: center;
         }
-        
-        .file-lang:hover {
-          background: #dee2e6;
-        }
-        
-        /* 語言顏色標記 */
-        .file-lang.ja { background: #e3f2fd; color: #1565c0; }
-        .file-lang.zh { background: #f3e5f5; color: #7b1fa2; }
-        .file-lang.ko { background: #e8f5e9; color: #2e7d32; }
-        .file-lang.en { background: #fff3e0; color: #ef6c00; }
-        .file-lang.auto { background: #f5f5f5; color: #616161; }
         
         .remove-file {
           margin-left: 8px;
-          color: #dc3545;
+          color: #ff4444;
           cursor: pointer;
-          font-size: 16px;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: all 0.2s;
-        }
-        
-        .remove-file:hover {
-          background-color: #dc3545;
-          color: white;
-        }
-        
-        .file-list-instruction {
-          margin-top: 10px;
-          font-size: 11px;
-          color: #6c757d;
-          text-align: center;
-          line-height: 1.4;
+          font-size: 14px;
         }
         
         /* 主內容 */
@@ -304,16 +230,16 @@
           user-select: text;
         }
         
-        /* 第一語言文本樣式 */
-        .primary-text {
+        /* 日語文本樣式 */
+        .japanese-text {
           font-family: "Hiragino Sans", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
           font-size: 16px;
           color: #2c3e50;
           margin-bottom: 4px;
         }
         
-        /* 第二語言文本樣式 */
-        .secondary-text {
+        /* 中文文本樣式 */
+        .chinese-text {
           font-family: "Arial", "Microsoft YaHei", sans-serif;
           font-size: 15px;
           color: #666;
@@ -322,22 +248,12 @@
           margin-top: 4px;
         }
         
-        /* 韓語特定樣式 */
-        .ko-text {
-          font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Nanum Gothic", "Dotum", sans-serif;
-        }
-        
-        /* 英語特定樣式 */
-        .en-text {
-          font-family: "Arial", "Helvetica Neue", "Segoe UI", sans-serif;
-        }
-        
         /* 單語模式 - 只顯示一種語言 */
-        .single-language .secondary-text {
+        .single-language .chinese-text {
           display: none;
         }
         
-        .single-language .primary-text {
+        .single-language .japanese-text {
           margin-bottom: 0;
           border: none;
         }
@@ -621,7 +537,7 @@
         /* 小屏幕（600px-900px） */
         @media (max-width: 900px) {
           :root {
-            --header-height: 140px;
+            --header-height: 160px;
           }
           
           .header {
@@ -671,6 +587,10 @@
           .bilingual-btn, .merge-btn {
             font-size: 11px;
             padding: 5px 8px;
+          }
+          
+          .language-selector {
+            font-size: 10px;
           }
           
           main {
@@ -853,7 +773,7 @@
             box-shadow: 0 1px 6px rgba(0,0,0,0.15);
           }
           
-          .file-list-panel {
+          .file-list {
             left: 10px;
             right: 10px;
             max-width: none;
@@ -863,7 +783,7 @@
         /* 超小屏幕（600px以下） */
         @media (max-width: 600px) {
           :root {
-            --header-height: 170px;
+            --header-height: 190px;
           }
           
           .header {
@@ -888,6 +808,11 @@
           
           .header-left p {
             font-size: 10px;
+          }
+          
+          .language-selector {
+            flex-wrap: wrap;
+            justify-content: center;
           }
           
           .text-box {
@@ -959,16 +884,12 @@
             padding: 6px;
             font-size: 11px;
           }
-          
-          .file-list-panel {
-            max-height: 50vh;
-          }
         }
         
         /* 橫向屏幕優化 */
         @media (max-width: 900px) and (orientation: landscape) {
           :root {
-            --header-height: 90px;
+            --header-height: 100px;
           }
           
           .header {
@@ -1063,53 +984,42 @@
     <header class="header" role="banner">
         <div class="header-left">
             <h1>小野字幕君</h1>
-            <p>支援：.srt / .ass / .docx / .txt / .pdf</p>
+            <p>支援：.srt / .ass / .docx / .txt / .pdf </p>
         </div>
         <div class="file-search-container" role="region" aria-label="檔案與搜尋">
             <input id="fileInput" type="file" accept=".ass,.srt,.docx,.txt,.pdf" multiple />
             <input id="searchBox" class="search-box" type="text" placeholder="輸入搜尋內容" />
             
-            <!-- 雙語切換按鈕 -->
+            <div class="language-selector">
+                <span>語言:</span>
+                <span id="langJapanese" class="lang-option active" data-lang="ja">日文</span>
+                <span id="langChinese" class="lang-option" data-lang="zh">中文</span>
+                <span id="langAuto" class="lang-option" data-lang="auto">自動</span>
+            </div>
+            
             <button id="bilingualBtn" class="bilingual-btn">雙語顯示</button>
             
-            <!-- 合併按鈕 -->
             <button id="mergeBtn" class="merge-btn" style="display:none;">合併雙語</button>
         </div>
     </header>
 
-    <!-- 文件列表面板 -->
-    <div class="file-list-panel collapsed" id="fileListPanel">
-        <div class="file-list-header" id="fileListHeader">
-            <div class="file-list-title">
-                <span>已上傳文件</span>
-                <span class="file-count" id="fileCount">0</span>
-            </div>
-            <div class="toggle-icon">▼</div>
-        </div>
-        <div class="file-list-content" id="fileListContent">
-            <!-- 文件列表內容會在這裡動態生成 -->
-            <div class="file-list-instruction">點擊語言標籤切換語言，點擊×移除文件</div>
-        </div>
+    <div class="file-list" id="fileList">
+        <div id="fileListContent"></div>
     </div>
 
-    <!-- 進度條 -->
     <div class="progress-container" id="progressContainer">
         <div class="progress-bar" id="progressBar"></div>
     </div>
 
-    <!-- 全局狀態指示器 -->
     <div class="global-status" id="globalStatus"></div>
 
-    <!-- 文件信息 -->
     <div class="file-info" id="fileInfo" style="display:none;"></div>
 
-    <!-- 按鈕容器 -->
     <div class="button-container">
         <button class="import-btn" id="importBtn">導入筆記</button>
         <button class="export-btn" id="exportBtn" style="display:none;">導出筆記</button>
     </div>
 
-    <!-- 隱藏的文件輸入框 -->
     <input type="file" id="importFileInput" accept=".html" style="display:none" />
 
     <main>
@@ -1126,20 +1036,8 @@
         let currentOpenNoteBox = null;
         let bilingualEnabled = true; // 默認開啟雙語顯示
         let uploadedFiles = []; // 存儲上傳的文件信息
-        let currentLanguage = 'ja'; // 當前選擇的語言: 'ja', 'zh', 'ko', 'en', 'auto'
+        let currentLanguage = 'ja'; // 當前選擇的語言: 'ja', 'zh', 'auto'
         let fileSubtitlesMap = new Map(); // 存儲每個文件的解析結果
-        
-        // ==================== 語言配置 ====================
-        const languageConfig = {
-            'ja': { name: '日語', code: 'ja', fontFamily: '"Hiragino Sans", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif', color: '#2c3e50' },
-            'zh': { name: '中文', code: 'zh', fontFamily: '"Arial", "Microsoft YaHei", sans-serif', color: '#666' },
-            'ko': { name: '韓語', code: 'ko', fontFamily: '"Malgun Gothic", "Apple SD Gothic Neo", "Nanum Gothic", "Dotum", sans-serif', color: '#2e7d32' },
-            'en': { name: '英語', code: 'en', fontFamily: '"Arial", "Helvetica Neue", "Segoe UI", sans-serif', color: '#ef6c00' },
-            'auto': { name: '自動', code: 'auto', fontFamily: 'inherit', color: '#616161' }
-        };
-        
-        // 語言循環順序
-        const languageOrder = ['ja', 'zh', 'ko', 'en', 'auto'];
         
         // ==================== 工具函數 ====================
         function debounce(func, wait) {
@@ -1285,98 +1183,55 @@
           }
         }
         
-        // ==================== 多語言檢測相關 ====================
+        // ==================== 語言檢測相關 ====================
         function isJapaneseText(text) {
           if (!text) return false;
-          // 日文假名和日文漢字
           const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/;
           return japaneseRegex.test(text);
         }
         
         function isChineseText(text) {
           if (!text) return false;
-          // 中文漢字，排除日文假名
+          // 檢查是否包含中文漢字，但不包含日文假名
           const chineseRegex = /[\u4E00-\u9FAF]/;
           const japaneseKanaRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
           return chineseRegex.test(text) && !japaneseKanaRegex.test(text);
         }
         
-        function isKoreanText(text) {
-          if (!text) return false;
-          // 韓文字符
-          const koreanRegex = /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/;
-          return koreanRegex.test(text);
-        }
-        
-        function isEnglishText(text) {
-          if (!text) return false;
-          // 主要為英文字母，且不包含中日韓字符
-          const englishRegex = /^[A-Za-z0-9\s\.,!?'"\-:;()\[\]{}]+$/;
-          const asianRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uAC00-\uD7AF\u1100-\u11FF]/;
-          return englishRegex.test(text) && !asianRegex.test(text);
-        }
-        
-        function detectLanguage(text) {
-          if (!text) return 'auto';
-          
-          // 檢查各種語言
-          if (isJapaneseText(text)) return 'ja';
-          if (isChineseText(text)) return 'zh';
-          if (isKoreanText(text)) return 'ko';
-          if (isEnglishText(text)) return 'en';
-          
-          return 'auto';
-        }
-        
         // ==================== 文件管理相關 ====================
         function updateFileList() {
-          const fileListPanel = document.getElementById('fileListPanel');
-          const fileCount = document.getElementById('fileCount');
+          const fileList = document.getElementById('fileList');
           const fileListContent = document.getElementById('fileListContent');
           
-          // 更新文件計數
-          fileCount.textContent = uploadedFiles.length;
-          
           if (uploadedFiles.length === 0) {
-            // 沒有文件時，保持收合狀態
-            fileListPanel.classList.add('collapsed');
+            fileList.classList.remove('show');
             return;
           }
           
-          // 有文件時，自動展開文件列表（第一次上傳時）
-          if (fileListPanel.classList.contains('collapsed') && uploadedFiles.length > 0) {
-            // 只有在第一次上傳時自動展開
-            const wasEmpty = fileListContent.innerHTML === '';
-            if (wasEmpty) {
-              fileListPanel.classList.remove('collapsed');
-            }
-          }
+          fileList.classList.add('show');
           
-          let html = '';
+          let html = '<div style="margin-bottom:8px; font-weight:bold;">已上傳文件:</div>';
           
           uploadedFiles.forEach((file, index) => {
-            const langInfo = languageConfig[file.lang] || languageConfig['auto'];
-            const langName = langInfo.name;
-            const langClass = file.lang;
+            const langLabel = file.lang === 'ja' ? '日文' : file.lang === 'zh' ? '中文' : '自動';
+            const langClass = file.lang === 'ja' ? 'lang-ja' : file.lang === 'zh' ? 'lang-zh' : 'lang-auto';
             
             html += `
               <div class="file-item">
-                <div class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
-                <div class="file-lang ${langClass}" data-index="${index}">${langName}</div>
+                <div class="file-name">${escapeHtml(file.name)}</div>
+                <div class="file-lang ${langClass}" data-index="${index}">${langLabel}</div>
                 <div class="remove-file" data-index="${index}">×</div>
               </div>
             `;
           });
           
-          // 添加說明文字
-          html += `<div class="file-list-instruction">點擊語言標籤切換語言，點擊×移除文件</div>`;
+          html += `<div style="margin-top:8px; font-size:11px; color:#666;">點擊語言標籤切換語言，點擊×移除文件</div>`;
           
           fileListContent.innerHTML = html;
           
           // 添加移除文件事件
           document.querySelectorAll('.remove-file').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-              e.stopPropagation();
+            btn.addEventListener('click', function() {
               const index = parseInt(this.dataset.index);
               removeFile(index);
             });
@@ -1388,19 +1243,17 @@
               e.stopPropagation();
               const fileIndex = parseInt(this.dataset.index);
               
-              // 在語言循環順序中查找當前語言位置
+              // 循環切換語言: 日文 -> 中文 -> 自動 -> 日文
               const currentLang = uploadedFiles[fileIndex].lang;
-              const currentIndex = languageOrder.indexOf(currentLang);
+              let newLang;
               
-              // 計算下一個語言
-              const nextIndex = (currentIndex + 1) % languageOrder.length;
-              const newLang = languageOrder[nextIndex];
+              if (currentLang === 'ja') newLang = 'zh';
+              else if (currentLang === 'zh') newLang = 'auto';
+              else newLang = 'ja';
               
               uploadedFiles[fileIndex].lang = newLang;
               updateFileList();
-              
-              const newLangName = languageConfig[newLang].name;
-              showGlobalStatus(`已將文件語言設置為: ${newLangName}`);
+              showGlobalStatus(`已將文件語言設置為: ${newLang === 'ja' ? '日文' : newLang === 'zh' ? '中文' : '自動'}`);
             });
           });
         }
@@ -1434,102 +1287,141 @@
           
           showLoading('正在合併雙語字幕...');
           
-          // 找出不同語言的文件
-          const languageGroups = {};
+          // 找出日文和中文文件
+          const japaneseFiles = uploadedFiles.filter(f => f.lang === 'ja' || (f.lang === 'auto' && fileContainsJapanese(f.name)));
+          const chineseFiles = uploadedFiles.filter(f => f.lang === 'zh' || (f.lang === 'auto' && fileContainsChinese(f.name)));
           
-          uploadedFiles.forEach(file => {
-            const lang = file.lang === 'auto' ? detectFileLanguage(file.name) : file.lang;
-            if (!languageGroups[lang]) {
-              languageGroups[lang] = [];
-            }
-            languageGroups[lang].push(file);
-          });
-          
-          const languages = Object.keys(languageGroups);
-          
-          if (languages.length < 2) {
-            showError('請上傳至少兩個不同語言的文件進行合併');
+          if (japaneseFiles.length === 0 || chineseFiles.length === 0) {
+            showError('請確保至少有一個日文文件和一個中文文件');
             return;
           }
           
-          // 使用前兩個不同語言的文件
-          const lang1 = languages[0];
-          const lang2 = languages[1];
-          const file1 = languageGroups[lang1][0];
-          const file2 = languageGroups[lang2][0];
+          // 使用第一個日文文件和第一個中文文件
+          const japaneseFile = japaneseFiles[0];
+          const chineseFile = chineseFiles[0];
           
-          const subtitles1 = fileSubtitlesMap.get(file1.name) || [];
-          const subtitles2 = fileSubtitlesMap.get(file2.name) || [];
+          const japaneseSubtitles = fileSubtitlesMap.get(japaneseFile.name) || [];
+          const chineseSubtitles = fileSubtitlesMap.get(chineseFile.name) || [];
           
-          if (subtitles1.length === 0 || subtitles2.length === 0) {
+          if (japaneseSubtitles.length === 0 || chineseSubtitles.length === 0) {
             showError('無法獲取文件內容，請重新上傳');
             return;
           }
           
           // 合併字幕
-          const mergedSubtitles = mergeSubtitlesFromTwoFiles(subtitles1, subtitles2, lang1, lang2);
+          const mergedSubtitles = mergeSubtitlesFromTwoFiles(japaneseSubtitles, chineseSubtitles);
           
           // 顯示合併結果
-          displayMergedSubtitles(mergedSubtitles, `${file1.name} + ${file2.name}`);
-          
-          const lang1Name = languageConfig[lang1].name;
-          const lang2Name = languageConfig[lang2].name;
-          showGlobalStatus(`已合併 ${subtitles1.length} 行${lang1Name}和 ${subtitles2.length} 行${lang2Name}`, 4000);
+          displayMergedSubtitles(mergedSubtitles, `${japaneseFile.name} + ${chineseFile.name}`);
+          showGlobalStatus(`已合併雙語字幕`, 4000);
         }
         
-        function detectFileLanguage(fileName) {
+        function fileContainsJapanese(fileName) {
           const subtitles = fileSubtitlesMap.get(fileName) || [];
-          if (subtitles.length === 0) return 'auto';
+          if (subtitles.length === 0) return false;
           
-          // 檢查前幾行確定語言
+          // 檢查前幾行是否包含日文
           const sampleSize = Math.min(10, subtitles.length);
-          const languageCounts = { ja: 0, zh: 0, ko: 0, en: 0 };
+          let japaneseCount = 0;
           
           for (let i = 0; i < sampleSize; i++) {
-            const text = subtitles[i].text || '';
-            const detectedLang = detectLanguage(text);
-            
-            if (detectedLang !== 'auto') {
-              languageCounts[detectedLang]++;
+            if (isJapaneseText(subtitles[i].text)) {
+              japaneseCount++;
             }
           }
           
-          // 找出最多的語言
-          let maxLang = 'auto';
-          let maxCount = 0;
-          
-          for (const lang in languageCounts) {
-            if (languageCounts[lang] > maxCount) {
-              maxCount = languageCounts[lang];
-              maxLang = lang;
-            }
-          }
-          
-          return maxCount > sampleSize / 2 ? maxLang : 'auto';
+          return japaneseCount > sampleSize / 2;
         }
         
-        function mergeSubtitlesFromTwoFiles(subtitles1, subtitles2, lang1, lang2) {
-          const merged = [];
-          const maxLength = Math.max(subtitles1.length, subtitles2.length);
+        function fileContainsChinese(fileName) {
+          const subtitles = fileSubtitlesMap.get(fileName) || [];
+          if (subtitles.length === 0) return false;
           
-          for (let i = 0; i < maxLength; i++) {
-            const sub1 = subtitles1[i] || { text: '' };
-            const sub2 = subtitles2[i] || { text: '' };
-            
-            // 優先使用有時間碼的信息
-            const startTime = sub1.startTime || sub2.startTime || '';
-            const endTime = sub1.endTime || sub2.endTime || '';
-            
-            merged.push({
-              primary: sub1.text || '',
-              secondary: sub2.text || '',
-              primaryLang: lang1,
-              secondaryLang: lang2,
-              originalText: sub1.text || sub2.text || '',
-              isBilingual: !!(sub1.text && sub2.text),
-              startTime: startTime,
-              endTime: endTime
+          // 檢查前幾行是否包含中文
+          const sampleSize = Math.min(10, subtitles.length);
+          let chineseCount = 0;
+          
+          for (let i = 0; i < sampleSize; i++) {
+            if (isChineseText(subtitles[i].text)) {
+              chineseCount++;
+            }
+          }
+          
+          return chineseCount > sampleSize / 2;
+        }
+        
+        function mergeSubtitlesFromTwoFiles(japaneseSubtitles, chineseSubtitles) {
+          const merged = [];
+          
+          // 檢查是否具有時間碼 (SRT 或 ASS 格式)
+          const hasTimecode = (japaneseSubtitles.length > 0 && japaneseSubtitles[0].startTime) || 
+                              (chineseSubtitles.length > 0 && chineseSubtitles[0].startTime);
+
+          if (hasTimecode) {
+            // 建立一個 Map，利用時間碼當作 Key 來對齊中日字幕
+            const timecodeMap = new Map();
+
+            // 處理日文字幕
+            japaneseSubtitles.forEach(sub => {
+              if (!sub.startTime) return;
+              // 技巧：移除毫秒 (例如將 00:00:01,234 變成 00:00:01)，大幅增加不同字幕檔的對齊容錯率
+              const timeKey = sub.startTime.split(/[,.]/)[0]; 
+              
+              if (!timecodeMap.has(timeKey)) {
+                timecodeMap.set(timeKey, { jpText: '', zhText: '', startTime: sub.startTime, endTime: sub.endTime });
+              }
+              
+              // 如果同一秒內有多句字幕，將其換行合併
+              const currentText = timecodeMap.get(timeKey).jpText;
+              timecodeMap.get(timeKey).jpText = currentText ? currentText + '\n' + sub.text : sub.text;
             });
+
+            // 處理中文字幕
+            chineseSubtitles.forEach(sub => {
+              if (!sub.startTime) return;
+              const timeKey = sub.startTime.split(/[,.]/)[0]; 
+
+              if (!timecodeMap.has(timeKey)) {
+                timecodeMap.set(timeKey, { jpText: '', zhText: '', startTime: sub.startTime, endTime: sub.endTime });
+              }
+              
+              const currentText = timecodeMap.get(timeKey).zhText;
+              timecodeMap.get(timeKey).zhText = currentText ? currentText + '\n' + sub.text : sub.text;
+            });
+
+            // 將 Map 轉換為陣列，並依照時間碼由小到大排序
+            const mergedArray = Array.from(timecodeMap.values());
+            mergedArray.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+            // 推入最終結果
+            mergedArray.forEach(item => {
+              merged.push({
+                japanese: item.jpText,
+                chinese: item.zhText,
+                originalText: item.jpText || item.zhText,
+                isBilingual: !!(item.jpText && item.zhText),
+                startTime: item.startTime,
+                endTime: item.endTime
+              });
+            });
+
+          } else {
+            // 降級處理：如果是 TXT、DOCX 或 PDF (沒有時間碼)，則維持原本的「按順序合併」
+            const maxLength = Math.max(japaneseSubtitles.length, chineseSubtitles.length);
+            
+            for (let i = 0; i < maxLength; i++) {
+              const jpSub = japaneseSubtitles[i] || { text: '' };
+              const zhSub = chineseSubtitles[i] || { text: '' };
+              
+              merged.push({
+                japanese: jpSub.text || '',
+                chinese: zhSub.text || '',
+                originalText: jpSub.text || zhSub.text || '',
+                isBilingual: !!(jpSub.text && zhSub.text),
+                startTime: '',
+                endTime: ''
+              });
+            }
           }
           
           return merged;
@@ -1561,18 +1453,7 @@
             const bilingualCount = processedSubtitles.filter(s => s.isBilingual).length;
             const singleCount = processedSubtitles.length - bilingualCount;
             
-            // 獲取語言信息
-            let langInfo = '';
-            if (subtitles.length > 0) {
-              const firstSub = subtitles[0];
-              if (firstSub.primaryLang && firstSub.secondaryLang) {
-                const lang1Name = languageConfig[firstSub.primaryLang].name;
-                const lang2Name = languageConfig[firstSub.secondaryLang].name;
-                langInfo = ` (${lang1Name} + ${lang2Name})`;
-              }
-            }
-            
-            updateFileInfo(`共 ${subtitles.length} 行字幕${langInfo}（${bilingualCount} 行雙語，${singleCount} 行單語）`, 4000);
+            updateFileInfo(`共 ${subtitles.length} 行字幕（${bilingualCount} 行雙語，${singleCount} 行單語）`, 4000);
           }, 10);
         }
         
@@ -1596,16 +1477,11 @@
             // 多個文件，顯示合併按鈕
             document.getElementById('mergeBtn').style.display = 'block';
             
-            // 嘗試自動檢測不同語言並合併
-            const detectedLanguages = new Set();
-            uploadedFiles.forEach(file => {
-              const lang = file.lang === 'auto' ? detectFileLanguage(file.name) : file.lang;
-              if (lang !== 'auto') {
-                detectedLanguages.add(lang);
-              }
-            });
+            // 嘗試自動檢測並合併
+            const japaneseFiles = uploadedFiles.filter(f => f.lang === 'ja' || (f.lang === 'auto' && fileContainsJapanese(f.name)));
+            const chineseFiles = uploadedFiles.filter(f => f.lang === 'zh' || (f.lang === 'auto' && fileContainsChinese(f.name)));
             
-            if (detectedLanguages.size >= 2) {
+            if (japaneseFiles.length > 0 && chineseFiles.length > 0) {
               // 自動合併
               setTimeout(() => {
                 mergeTwoFiles();
@@ -1617,8 +1493,8 @@
           }
         }
         
-        // ==================== 多語言字幕處理 ====================
-        function processMultiLanguageSubtitles(subtitles) {
+        // ==================== 中日雙語合併處理 ====================
+        function processBilingualSubtitles(subtitles) {
           const processed = [];
           
           // 如果字幕包含時間碼信息（SRT/ASS格式），則按時間碼合併
@@ -1656,49 +1532,46 @@
             if (group.texts.length === 1) {
               // 單一字幕行
               const text = group.texts[0].text;
-              const lang = detectLanguage(text);
+              const isJP = isJapaneseText(text);
+              const isZH = isChineseText(text);
               
               merged.push({
-                primary: text,
-                secondary: '',
-                primaryLang: lang !== 'auto' ? lang : 'ja',
-                secondaryLang: '',
+                japanese: isJP ? text : '',
+                chinese: isZH ? text : '',
                 originalText: text,
                 isBilingual: false,
                 startTime: group.startTime,
                 endTime: group.endTime
               });
             } else if (group.texts.length === 2) {
-              // 兩個字幕行，可能是雙語
+              // 兩個字幕行，可能是中日雙語
               const text1 = group.texts[0].text;
               const text2 = group.texts[1].text;
-              const lang1 = detectLanguage(text1);
-              const lang2 = detectLanguage(text2);
+              const isText1JP = isJapaneseText(text1);
+              const isText1ZH = isChineseText(text1);
+              const isText2JP = isJapaneseText(text2);
+              const isText2ZH = isChineseText(text2);
               
-              if (lang1 !== lang2 && lang1 !== 'auto' && lang2 !== 'auto') {
-                // 確認為雙語
+              if ((isText1JP && isText2ZH) || (isText1ZH && isText2JP)) {
+                // 確認為中日雙語
+                const japanese = isText1JP ? text1 : text2;
+                const chinese = isText1ZH ? text1 : text2;
+                
                 merged.push({
-                  primary: text1,
-                  secondary: text2,
-                  primaryLang: lang1,
-                  secondaryLang: lang2,
-                  originalText: `${text1} | ${text2}`,
+                  japanese: japanese,
+                  chinese: chinese,
+                  originalText: `${japanese} | ${chinese}`,
                   isBilingual: true,
                   startTime: group.startTime,
                   endTime: group.endTime
                 });
               } else {
-                // 不是雙語，保持原樣
+                // 不是中日雙語，保持原樣
                 group.texts.forEach((item, i) => {
-                  const text = item.text;
-                  const lang = detectLanguage(text);
-                  
                   merged.push({
-                    primary: text,
-                    secondary: '',
-                    primaryLang: lang !== 'auto' ? lang : 'ja',
-                    secondaryLang: '',
-                    originalText: text,
+                    japanese: isJapaneseText(item.text) ? item.text : '',
+                    chinese: isChineseText(item.text) ? item.text : '',
+                    originalText: item.text,
                     isBilingual: false,
                     startTime: group.startTime,
                     endTime: group.endTime
@@ -1709,13 +1582,9 @@
               // 多於兩個字幕行，按原樣處理
               group.texts.forEach((item, i) => {
                 const text = item.text;
-                const lang = detectLanguage(text);
-                
                 merged.push({
-                  primary: text,
-                  secondary: '',
-                  primaryLang: lang !== 'auto' ? lang : 'ja',
-                  secondaryLang: '',
+                  japanese: isJapaneseText(text) ? text : '',
+                  chinese: isChineseText(text) ? text : '',
                   originalText: text,
                   isBilingual: false,
                   startTime: group.startTime,
@@ -1738,12 +1607,9 @@
             
             // 如果是最後一行，直接添加
             if (i === subtitles.length - 1) {
-              const lang = detectLanguage(current.text);
               processed.push({
-                primary: current.text || '',
-                secondary: '',
-                primaryLang: lang !== 'auto' ? lang : 'ja',
-                secondaryLang: '',
+                japanese: isJapaneseText(current.text) ? current.text : '',
+                chinese: isChineseText(current.text) ? current.text : '',
                 originalText: current.text || '',
                 isBilingual: false
               });
@@ -1753,44 +1619,56 @@
             
             const next = subtitles[i + 1];
             
-            // 判斷當前和下一行是否為雙語對
-            const currentLang = detectLanguage(current.text);
-            const nextLang = detectLanguage(next.text);
+            // 判斷當前和下一行是否為中日雙語對
+            const isCurrentJapanese = isJapaneseText(current.text);
+            const isCurrentChinese = isChineseText(current.text);
+            const isNextJapanese = isJapaneseText(next.text);
+            const isNextChinese = isChineseText(next.text);
             
-            // 如果兩行是不同的語言，則視為雙語
-            if (currentLang !== nextLang && currentLang !== 'auto' && nextLang !== 'auto') {
+            // 情況1: 日語在前，中文在後
+            if (isCurrentJapanese && isNextChinese) {
               processed.push({
-                primary: current.text || '',
-                secondary: next.text || '',
-                primaryLang: currentLang,
-                secondaryLang: nextLang,
+                japanese: current.text || '',
+                chinese: next.text || '',
                 originalText: current.text || '',
                 isBilingual: true
               });
               i += 2; // 跳過兩行
             }
-            // 情況2: 同一行內包含多語言文本（用分隔符分隔）
+            // 情況2: 中文在前，日語在後
+            else if (isCurrentChinese && isNextJapanese) {
+              processed.push({
+                japanese: next.text || '',
+                chinese: current.text || '',
+                originalText: next.text || '',
+                isBilingual: true
+              });
+              i += 2; // 跳過兩行
+            }
+            // 情況3: 同一行內包含中日文本（用分隔符分隔）
             else if (current.text && (current.text.includes('|') || current.text.includes('/') || current.text.includes('\\'))) {
               const parts = current.text.split(/[|/\\]/).map(p => p.trim());
               if (parts.length >= 2) {
-                const lang1 = detectLanguage(parts[0]);
-                const lang2 = detectLanguage(parts[1]);
+                // 嘗試判斷哪部分是日語，哪部分是中文
+                let japanesePart = parts[0];
+                let chinesePart = parts[1];
+                
+                // 如果第一部分是中文，第二部分是日語，則交換
+                if (isChineseText(parts[0]) && isJapaneseText(parts[1])) {
+                  japanesePart = parts[1];
+                  chinesePart = parts[0];
+                }
                 
                 processed.push({
-                  primary: parts[0],
-                  secondary: parts[1],
-                  primaryLang: lang1 !== 'auto' ? lang1 : 'ja',
-                  secondaryLang: lang2 !== 'auto' ? lang2 : 'zh',
+                  japanese: japanesePart,
+                  chinese: chinesePart,
                   originalText: current.text || '',
                   isBilingual: true
                 });
               } else {
-                const lang = detectLanguage(current.text);
                 processed.push({
-                  primary: current.text || '',
-                  secondary: '',
-                  primaryLang: lang !== 'auto' ? lang : 'ja',
-                  secondaryLang: '',
+                  japanese: current.text || '',
+                  chinese: '',
                   originalText: current.text || '',
                   isBilingual: false
                 });
@@ -1799,12 +1677,9 @@
             }
             // 其他情況：單語言行
             else {
-              const lang = detectLanguage(current.text);
               processed.push({
-                primary: current.text || '',
-                secondary: '',
-                primaryLang: lang !== 'auto' ? lang : 'ja',
-                secondaryLang: '',
+                japanese: isJapaneseText(current.text) ? current.text : '',
+                chinese: isChineseText(current.text) ? current.text : '',
                 originalText: current.text || '',
                 isBilingual: false
               });
@@ -1824,7 +1699,7 @@
             btn.classList.add('active');
             btn.textContent = '單語顯示';
             document.body.classList.remove('single-language');
-            showGlobalStatus('已啟用雙語顯示', 2000);
+            showGlobalStatus('已啟用中日雙語顯示', 2000);
           } else {
             btn.classList.remove('active');
             btn.textContent = '雙語顯示';
@@ -1992,21 +1867,17 @@
           const hasNote = notesData[index] ? 'has-note' : '';
           const noteContent = notesData[index] || '';
           const noteHasContent = noteContent ? 'has-content' : '';
-          const escapedPrimary = escapeHtml(subtitle.primary || '');
-          const escapedSecondary = escapeHtml(subtitle.secondary || '');
+          const escapedJapanese = escapeHtml(subtitle.japanese || '');
+          const escapedChinese = escapeHtml(subtitle.chinese || '');
           const escapedNote = escapeHtml(noteContent);
           
-          // 根據語言添加相應的CSS類
-          const primaryLangClass = subtitle.primaryLang ? `${subtitle.primaryLang}-text` : '';
-          const secondaryLangClass = subtitle.secondaryLang ? `${subtitle.secondaryLang}-text` : '';
+          // 構建日語部分HTML
+          let japaneseHTML = `<div class="japanese-text" data-original="${escapeHtml(subtitle.japanese || '')}">${escapedJapanese}</div>`;
           
-          // 構建第一語言部分HTML
-          let primaryHTML = `<div class="primary-text ${primaryLangClass}" data-original="${escapeHtml(subtitle.primary || '')}">${escapedPrimary}</div>`;
-          
-          // 如果有第二語言翻譯，添加第二語言部分
-          let secondaryHTML = '';
-          if (subtitle.secondary && subtitle.secondary.trim() !== '') {
-            secondaryHTML = `<div class="secondary-text ${secondaryLangClass}">${escapedSecondary}</div>`;
+          // 如果有中文翻譯，添加中文部分
+          let chineseHTML = '';
+          if (subtitle.chinese && subtitle.chinese.trim() !== '') {
+            chineseHTML = `<div class="chinese-text">${escapedChinese}</div>`;
           }
           
           // 如果有時間碼，添加到data屬性
@@ -2014,9 +1885,9 @@
           
           return `<div class="row" data-index="${index}" ${timecodeAttr}>
               <div class="subtitle ${hasNote}">
-                <div class="text-box" data-original="${escapeHtml(subtitle.primary || '')}">
-                  ${primaryHTML}
-                  ${secondaryHTML}
+                <div class="text-box" data-original="${escapeHtml(subtitle.japanese || '')}">
+                  ${japaneseHTML}
+                  ${chineseHTML}
                 </div>
                 <div class="note-area ${hasNote}">
                   <button class="add-note-btn" data-index="${index}">+</button>
@@ -2106,18 +1977,7 @@
             const bilingualCount = subtitles.filter(s => s.isBilingual).length;
             const singleCount = subtitles.length - bilingualCount;
             
-            // 獲取語言信息
-            let langInfo = '';
-            if (subtitles.length > 0) {
-              const firstBilingual = subtitles.find(s => s.isBilingual);
-              if (firstBilingual) {
-                const lang1Name = languageConfig[firstBilingual.primaryLang].name;
-                const lang2Name = languageConfig[firstBilingual.secondaryLang].name;
-                langInfo = ` (${lang1Name} + ${lang2Name})`;
-              }
-            }
-            
-            updateFileInfo(`已加載 ${subtitles.length} 行字幕${langInfo}（${bilingualCount} 行雙語，${singleCount} 行單語）`, 4000);
+            updateFileInfo(`已加載 ${subtitles.length} 行字幕（${bilingualCount} 行雙語，${singleCount} 行單語）`, 4000);
           }, 0);
         }
         
@@ -2312,8 +2172,8 @@
           showLoading(`正在加載 ${subtitles.length} 行字幕...`);
           
           setTimeout(() => {
-            // 處理多語言字幕
-            processedSubtitles = processMultiLanguageSubtitles(subtitles);
+            // 處理中日雙語字幕
+            processedSubtitles = processBilingualSubtitles(subtitles);
             
             // 統計雙語行數
             const bilingualCount = processedSubtitles.filter(s => s.isBilingual).length;
@@ -2494,7 +2354,7 @@
                   if (subtitleText && noteText) {
                     // 在processedSubtitles中查找匹配
                     const matchIndex = processedSubtitles.findIndex(sub => 
-                      sub.primary === subtitleText || sub.secondary === subtitleText || sub.originalText === subtitleText
+                      sub.japanese === subtitleText || sub.chinese === subtitleText || sub.originalText === subtitleText
                     );
                     
                     if (matchIndex !== -1) {
@@ -2532,13 +2392,13 @@
           
           if (!q) {
             rows.forEach(row => {
-              const primaryDiv = row.querySelector('.subtitle .text-box .primary-text');
-              const secondaryDiv = row.querySelector('.subtitle .text-box .secondary-text');
-              if (primaryDiv && primaryDiv.dataset.original) {
-                primaryDiv.innerHTML = escapeHtml(primaryDiv.dataset.original);
+              const japaneseDiv = row.querySelector('.subtitle .text-box .japanese-text');
+              const chineseDiv = row.querySelector('.subtitle .text-box .chinese-text');
+              if (japaneseDiv && japaneseDiv.dataset.original) {
+                japaneseDiv.innerHTML = escapeHtml(japaneseDiv.dataset.original);
               }
-              if (secondaryDiv) {
-                secondaryDiv.innerHTML = escapeHtml(secondaryDiv.textContent || '');
+              if (chineseDiv) {
+                chineseDiv.innerHTML = escapeHtml(chineseDiv.textContent || '');
               }
               row.style.display = '';
             });
@@ -2549,23 +2409,23 @@
           let matchCount = 0;
           
           rows.forEach((row, idx) => {
-            const primaryDiv = row.querySelector('.subtitle .text-box .primary-text');
-            const secondaryDiv = row.querySelector('.subtitle .text-box .secondary-text');
+            const japaneseDiv = row.querySelector('.subtitle .text-box .japanese-text');
+            const chineseDiv = row.querySelector('.subtitle .text-box .chinese-text');
             
             let found = false;
             
-            if (primaryDiv) {
-              const original = primaryDiv.dataset.original || primaryDiv.textContent || '';
+            if (japaneseDiv) {
+              const original = japaneseDiv.dataset.original || japaneseDiv.textContent || '';
               if (original.match(regex)) {
-                primaryDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
+                japaneseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
                 found = true;
               }
             }
             
-            if (secondaryDiv) {
-              const original = secondaryDiv.textContent || '';
+            if (chineseDiv) {
+              const original = chineseDiv.textContent || '';
               if (original.match(regex)) {
-                secondaryDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
+                chineseDiv.innerHTML = escapeHtml(original).replace(regex, '<span class="highlight">$1</span>');
                 found = true;
               }
             }
@@ -2608,10 +2468,10 @@
             let subtitleText = '';
             
             if (subtitle) {
-              if (subtitle.secondary && subtitle.secondary.trim() !== '') {
-                subtitleText = `${subtitle.primary} | ${subtitle.secondary}`;
+              if (subtitle.chinese && subtitle.chinese.trim() !== '') {
+                subtitleText = `${subtitle.japanese} | ${subtitle.chinese}`;
               } else {
-                subtitleText = subtitle.primary;
+                subtitleText = subtitle.japanese;
               }
             }
             
@@ -2666,10 +2526,20 @@
         
         document.getElementById('mergeBtn').addEventListener('click', mergeTwoFiles);
         
-        // 文件列表面板收合功能
-        document.getElementById('fileListHeader').addEventListener('click', function() {
-          const panel = document.getElementById('fileListPanel');
-          panel.classList.toggle('collapsed');
+        // 語言選擇器事件
+        document.querySelectorAll('.lang-option').forEach(option => {
+          option.addEventListener('click', function() {
+            // 移除所有活動狀態
+            document.querySelectorAll('.lang-option').forEach(el => {
+              el.classList.remove('active');
+            });
+            
+            // 設置當前選中的語言
+            this.classList.add('active');
+            currentLanguage = this.dataset.lang;
+            
+            showGlobalStatus(`已設置語言為: ${this.textContent}`, 2000);
+          });
         });
         
         // ==================== 頁面離開確認 ====================
@@ -2688,8 +2558,8 @@
           // 初始化雙語按鈕狀態
           document.getElementById('bilingualBtn').classList.add('active');
           
-          // 初始化語言為日文
-          currentLanguage = 'ja';
+          // 初始化語言選擇器
+          document.getElementById('langJapanese').classList.add('active');
         });
     </script>
 </body>
