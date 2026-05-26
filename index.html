@@ -74,34 +74,69 @@
           flex-wrap: wrap;
         }
 
-        .file-input-group {
+        /* 檔案上傳區塊新設計 */
+        .file-buttons-wrapper {
           display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 13px;
-          background: rgba(255, 255, 255, 0.1);
-          padding: 4px 8px;
-          border-radius: 6px;
-          overflow: hidden;
-        }
-        
-        .file-input-group span {
-          white-space: nowrap;
+          gap: 8px;
         }
 
-        .file-input-group input[type="file"] {
-          width: 160px;
+        .custom-file-upload {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 13px;
           color: #fff;
-          font-size: 12px;
+          transition: all 0.2s ease;
+          max-width: 160px;
+          user-select: none;
+        }
+
+        .custom-file-upload:hover {
+          background: rgba(255, 255, 255, 0.25);
+          border-color: rgba(255, 255, 255, 0.6);
+          transform: translateY(-1px);
+        }
+
+        .custom-file-upload input[type="file"] {
+          display: none; /* 隱藏原生醜陋的按鈕 */
+        }
+
+        .file-name-text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .file-icon {
+          font-size: 14px;
+        }
+
+        /* 有檔案時的視覺回饋 */
+        .custom-file-upload.has-file {
+          background: rgba(46, 204, 113, 0.2);
+          border-color: #2ecc71;
+          color: #e8f8f5;
         }
         
         .search-box {
-          padding: 6px 8px;
-          border-radius: 6px;
+          padding: 6px 12px;
+          border-radius: 20px;
           border: 1px solid #ddd;
           background: #fff;
           font-size: 13px;
           width: 180px;
+          transition: all 0.2s ease;
+        }
+
+        .search-box:focus {
+          outline: none;
+          border-color: #3498db;
+          box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
         
         /* 主內容 */
@@ -302,7 +337,7 @@
           color: white;
           border: none;
           padding: 10px 16px;
-          border-radius: 6px;
+          border-radius: 20px;
           cursor: pointer;
           font-size: 14px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -321,7 +356,7 @@
           color: white;
           border: none;
           padding: 10px 16px;
-          border-radius: 6px;
+          border-radius: 20px;
           cursor: pointer;
           font-size: 14px;
           transition: all 0.2s ease;
@@ -377,8 +412,8 @@
           background: #9b59b6;
           color: white;
           border: none;
-          padding: 6px 12px;
-          border-radius: 6px;
+          padding: 6px 14px;
+          border-radius: 20px;
           cursor: pointer;
           font-size: 13px;
           transition: all 0.2s ease;
@@ -427,13 +462,10 @@
             gap: 6px;
           }
           
-          .file-input-group {
-            padding: 2px 6px;
-          }
-
-          .file-input-group input[type="file"] {
-            width: 130px;
-            font-size: 11px;
+          .custom-file-upload {
+            padding: 4px 10px;
+            max-width: 130px;
+            font-size: 12px;
           }
           
           .search-box {
@@ -445,7 +477,7 @@
           
           .bilingual-btn {
             font-size: 11px;
-            padding: 5px 8px;
+            padding: 5px 10px;
           }
           
           main {
@@ -513,20 +545,23 @@
             gap: 6px;
           }
           
-          /* 讓檔案1和檔案2並排顯示 */
-          .file-input-group {
-            width: calc(50% - 3px);
-            flex: none;
-            padding: 4px;
-          }
-
-          .file-input-group span {
-            font-size: 11px;
-          }
-
-          .file-input-group input[type="file"] {
+          .file-buttons-wrapper {
             width: 100%;
-            font-size: 10px;
+            flex: none;
+            gap: 6px;
+          }
+
+          /* 讓檔案1和檔案2並排顯示 */
+          .custom-file-upload {
+            flex: 1;
+            max-width: none;
+            justify-content: center;
+            padding: 6px;
+          }
+
+          .file-name-text {
+            font-size: 11px;
+            max-width: 80px; /* 限制寬度避免破版 */
           }
           
           /* 搜尋框和雙語切換按鈕並排顯示 */
@@ -555,16 +590,21 @@
             <p>支援：.srt / .ass / .docx / .txt / .pdf</p>
         </div>
         <div class="file-search-container" role="region" aria-label="檔案與搜尋">
-            <div class="file-input-group">
-              <span>檔案1:</span>
-              <input id="fileInput1" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
-            </div>
-            <div class="file-input-group">
-              <span>檔案2:</span>
-              <input id="fileInput2" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
+            
+            <div class="file-buttons-wrapper">
+              <label class="custom-file-upload" id="labelFile1">
+                  <input id="fileInput1" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
+                  <span class="file-icon">📁</span>
+                  <span class="file-name-text" id="textFile1">選擇檔案 1</span>
+              </label>
+              <label class="custom-file-upload" id="labelFile2">
+                  <input id="fileInput2" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
+                  <span class="file-icon">📁</span>
+                  <span class="file-name-text" id="textFile2">選擇檔案 2</span>
+              </label>
             </div>
 
-            <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字 (將顯示前後句)" />
+            <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字 (顯示前後句)" />
             <button id="bilingualBtn" class="bilingual-btn">雙語顯示</button>
         </div>
     </header>
@@ -874,8 +914,24 @@
         }
         
         // ==================== 讀取檔案邏輯 ====================
-        function handleFileChoose(file, targetDataStore) {
-          if (!file) return;
+        function handleFileChoose(file, targetDataStore, fileNumber) {
+          const labelId = 'labelFile' + fileNumber;
+          const textId = 'textFile' + fileNumber;
+          const label = document.getElementById(labelId);
+          const textSpan = document.getElementById(textId);
+          
+          if (!file) {
+            textSpan.textContent = '選擇檔案 ' + fileNumber;
+            label.classList.remove('has-file');
+            targetDataStore.name = "";
+            targetDataStore.subtitles = [];
+            return;
+          }
+
+          // 更新按鈕視覺狀態
+          textSpan.textContent = file.name;
+          label.classList.add('has-file');
+
           const ext = (file.name.split('.').pop() || '').toLowerCase();
           const reader = new FileReader();
           
@@ -912,11 +968,11 @@
         }
 
         document.getElementById('fileInput1').addEventListener('change', function(e) {
-          handleFileChoose(e.target.files[0], file1Data);
+          handleFileChoose(e.target.files[0], file1Data, 1);
         });
 
         document.getElementById('fileInput2').addEventListener('change', function(e) {
-          handleFileChoose(e.target.files[0], file2Data);
+          handleFileChoose(e.target.files[0], file2Data, 2);
         });
         
         // ==================== UI 渲染與事件 ====================
@@ -956,9 +1012,8 @@
             
             setTimeout(() => autoResizeTextarea(noteBox), 0);
             
-            noteBox.addEventListener('input', function() { autoResizeTextarea(this); });
-
-            noteBox.addEventListener('blur', debounce(function() {
+            // 抽出儲存邏輯
+            const saveNote = () => {
               const val = noteBox.value.trim();
               if (val) {
                 notesData[index] = val;
@@ -970,7 +1025,18 @@
                 subtitleDiv.classList.remove('has-written-note');
               }
               updateNoteCount();
-            }, 500));
+            };
+
+            // 停頓 0.5 秒自動儲存 (Debounce)
+            const debouncedSave = debounce(saveNote, 500);
+            
+            noteBox.addEventListener('input', function() { 
+              autoResizeTextarea(this); 
+              debouncedSave(); // 打字時自動觸發計時儲存
+            });
+
+            // 失去焦點時「立刻」儲存
+            noteBox.addEventListener('blur', saveNote);
             
             noteBox.addEventListener('dragover', function(e) {
               e.preventDefault();
@@ -1003,7 +1069,6 @@
           const q = this.value.trim();
           const rows = Array.from(document.querySelectorAll('.row'));
           
-          // 如果搜尋框為空，重置所有狀態
           if (!q) {
             rows.forEach(row => {
               const jp = row.querySelector('.japanese-text');
@@ -1011,7 +1076,7 @@
               if (jp && jp.dataset.original) jp.innerHTML = escapeHtml(jp.dataset.original);
               if (zh && zh.dataset.original) zh.innerHTML = escapeHtml(zh.dataset.original);
               row.style.display = '';
-              row.style.opacity = '1'; // 恢復透明度
+              row.style.opacity = '1'; 
             });
             return;
           }
@@ -1019,7 +1084,6 @@
           const regex = new RegExp('(' + escapeRegExp(q) + ')', 'gi');
           let matchIndices = [];
           
-          // 第一階段：找出所有直接匹配的句子，並加入高亮
           rows.forEach((row, idx) => {
             const jp = row.querySelector('.japanese-text');
             const zh = row.querySelector('.chinese-text');
@@ -1050,19 +1114,16 @@
             }
           });
           
-          // 第二階段：將匹配行的「上一行」與「下一行」也加入顯示清單
           let visibleIndices = new Set();
           matchIndices.forEach(idx => {
-            if (idx > 0) visibleIndices.add(idx - 1); // 加上文
-            visibleIndices.add(idx);                  // 加匹配行
-            if (idx < rows.length - 1) visibleIndices.add(idx + 1); // 加下文
+            if (idx > 0) visibleIndices.add(idx - 1); 
+            visibleIndices.add(idx);                  
+            if (idx < rows.length - 1) visibleIndices.add(idx + 1); 
           });
           
-          // 第三階段：套用顯示與半透明效果
           rows.forEach((row, idx) => {
             if (visibleIndices.has(idx)) {
               row.style.display = '';
-              // 如果這行只是前後文 (不是直接搜尋到的)，調降透明度做區分
               if (!matchIndices.includes(idx)) {
                 row.style.opacity = '0.5';
               } else {
