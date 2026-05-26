@@ -103,7 +103,7 @@
         }
 
         .custom-file-upload input[type="file"] {
-          display: none; /* 隱藏原生醜陋的按鈕 */
+          display: none; 
         }
 
         .file-name-text {
@@ -485,7 +485,6 @@
             padding-bottom: 180px;
           }
           
-          /* 中螢幕時：字幕和筆記框變成上下排列 */
           .subtitle {
             flex-direction: column;
             gap: 8px;
@@ -537,7 +536,7 @@
         /* 超小屏幕（600px以下） */
         @media (max-width: 600px) {
           :root {
-            --header-height: 130px; /* 大幅縮減頭部高度 */
+            --header-height: 130px; 
           }
           
           .file-search-container {
@@ -551,7 +550,6 @@
             gap: 6px;
           }
 
-          /* 讓檔案1和檔案2並排顯示 */
           .custom-file-upload {
             flex: 1;
             max-width: none;
@@ -561,10 +559,9 @@
 
           .file-name-text {
             font-size: 11px;
-            max-width: 80px; /* 限制寬度避免破版 */
+            max-width: 80px; 
           }
           
-          /* 搜尋框和雙語切換按鈕並排顯示 */
           .search-box {
             width: calc(100% - 76px);
             flex: none;
@@ -928,7 +925,6 @@
             return;
           }
 
-          // 更新按鈕視覺狀態
           textSpan.textContent = file.name;
           label.classList.add('has-file');
 
@@ -1012,7 +1008,6 @@
             
             setTimeout(() => autoResizeTextarea(noteBox), 0);
             
-            // 抽出儲存邏輯
             const saveNote = () => {
               const val = noteBox.value.trim();
               if (val) {
@@ -1027,15 +1022,13 @@
               updateNoteCount();
             };
 
-            // 停頓 0.5 秒自動儲存 (Debounce)
             const debouncedSave = debounce(saveNote, 500);
             
             noteBox.addEventListener('input', function() { 
               autoResizeTextarea(this); 
-              debouncedSave(); // 打字時自動觸發計時儲存
+              debouncedSave(); 
             });
 
-            // 失去焦點時「立刻」儲存
             noteBox.addEventListener('blur', saveNote);
             
             noteBox.addEventListener('dragover', function(e) {
@@ -1145,7 +1138,7 @@
           }
         });
 
-        // ==================== 其他功能 ====================
+        // ==================== 匯入/匯出與其他功能 ====================
         document.getElementById('bilingualBtn').addEventListener('click', function() {
           bilingualEnabled = !bilingualEnabled;
           this.textContent = bilingualEnabled ? '單語顯示' : '雙語顯示';
@@ -1153,7 +1146,7 @@
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
-          if(processedSubtitles.length === 0) return alert('請先上傳字幕');
+          if(processedSubtitles.length === 0) return alert('請先上傳最少一個字幕檔');
           document.getElementById('importFileInput').click();
         });
 
@@ -1161,18 +1154,60 @@
           const file = e.target.files[0];
           if (!file) return;
           const reader = new FileReader();
+          
           reader.onload = (ev) => {
-            const doc = new DOMParser().parseFromString(ev.target.result, 'text/html');
-            doc.querySelectorAll('.export-item').forEach(item => {
-              const subText = item.querySelector('.export-note-subtitle').textContent.trim();
-              const noteText = item.querySelector('.export-note-content').textContent.trim();
-              const matchIdx = processedSubtitles.findIndex(s => s.japanese === subText || s.originalText === subText);
-              if (matchIdx !== -1) notesData[matchIdx] = noteText;
-            });
-            renderAllSubtitles(processedSubtitles);
-            updateNoteCount();
+            try {
+              const doc = new DOMParser().parseFromString(ev.target.result, 'text/html');
+              const exportItems = doc.querySelectorAll('.export-item');
+              
+              if (exportItems.length === 0) {
+                showError('無法識別的筆記格式，請確保這是從本工具匯出的筆記文件');
+                return;
+              }
+
+              let importedCount = 0;
+              let skippedCount = 0;
+
+              exportItems.forEach(item => {
+                const subtitleEl = item.querySelector('.export-note-subtitle');
+                const noteEl = item.querySelector('.export-note-content');
+                
+                if (subtitleEl && noteEl) {
+                  const subText = subtitleEl.textContent.trim();
+                  const noteText = noteEl.textContent.trim();
+                  
+                  if (subText && noteText) {
+                    // 修正的匹配邏輯：同時比對雙語合併結果、日文原文、原始文
+                    const matchIdx = processedSubtitles.findIndex(s => {
+                      const combinedTitle = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
+                      return combinedTitle === subText || s.japanese === subText || s.originalText === subText;
+                    });
+                    
+                    if (matchIdx !== -1) {
+                      notesData[matchIdx] = noteText;
+                      importedCount++;
+                    } else {
+                      skippedCount++;
+                    }
+                  }
+                }
+              });
+              
+              if (importedCount > 0) {
+                renderAllSubtitles(processedSubtitles);
+                updateNoteCount();
+                showGlobalStatus(`成功導入 ${importedCount} 條筆記${skippedCount > 0 ? `，${skippedCount} 條未匹配` : ''}`, 4000);
+              } else {
+                showGlobalStatus('未成功導入任何筆記，請檢查字幕文件是否匹配', 3000);
+              }
+            } catch (err) {
+              showError('解析筆記文件時發生錯誤');
+            }
           };
           reader.readAsText(file, 'utf-8');
+          
+          // 關鍵修復：清空檔案選擇器，允許重複選擇同一個檔案
+          this.value = '';
         });
 
         document.getElementById('exportBtn').addEventListener('click', () => {
