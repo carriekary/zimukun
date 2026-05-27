@@ -12,7 +12,7 @@
 
     <style>
         :root {
-          --header-height: 100px;
+          --header-height: 90px;
           --accent: #2c3e50;
           --subtitle-min-height: 30px;
           --gutter: 12px;
@@ -145,6 +145,14 @@
           transform: scale(1.2);
         }
         
+        /* 頂部操作區組合 (搜尋 + 按鈕) */
+        .action-group {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
         .search-box {
           padding: 6px 12px;
           border-radius: 20px;
@@ -159,6 +167,39 @@
           outline: none;
           border-color: #3498db;
           box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        /* 雙語切換按鈕 */
+        .bilingual-btn {
+          background: #9b59b6;
+          color: white;
+          border: none;
+          padding: 6px 14px;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 13px;
+          transition: all 0.2s ease;
+        }
+        .bilingual-btn:hover { background: #8e44ad; transform: translateY(-1px); }
+        .bilingual-btn.active { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); }
+
+        /* 隱藏筆記切換按鈕 */
+        .toggle-notes-btn {
+          background: #3498db;
+          color: white;
+          border: none;
+          padding: 6px 14px;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 13px;
+          transition: all 0.2s ease;
+        }
+        .toggle-notes-btn:hover { background: #d35400; transform: translateY(-1px); }
+        .toggle-notes-btn.active { background: #a84300; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        /* 全域隱藏筆記狀態 */
+        body.hide-notes .note-area {
+          display: none !important;
         }
         
         /* 主內容 */
@@ -429,31 +470,10 @@
           transition: width 0.3s ease;
         }
         
-        /* 雙語切換按鈕 */
-        .bilingual-btn {
-          background: #9b59b6;
-          color: white;
-          border: none;
-          padding: 6px 14px;
-          border-radius: 20px;
-          cursor: pointer;
-          font-size: 13px;
-          transition: all 0.2s ease;
-        }
-        
-        .bilingual-btn:hover {
-          background: #8e44ad;
-          transform: translateY(-1px);
-        }
-        
-        .bilingual-btn.active {
-          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
-        }
-        
         /* 中屏幕（600px-900px） */
         @media (max-width: 900px) {
           :root {
-            --header-height: 120px;
+            --header-height: 130px;
           }
           .header {
             flex-direction: column;
@@ -476,8 +496,8 @@
           .search-box {
             flex: 1; min-width: 120px; width: auto; font-size: 12px;
           }
-          .bilingual-btn {
-            font-size: 11px; padding: 5px 10px;
+          .bilingual-btn, .toggle-notes-btn {
+            font-size: 11px; padding: 6px 10px;
           }
           main { padding-top: calc(var(--header-height) + 16px); padding-bottom: 180px; }
           .subtitle {
@@ -489,7 +509,9 @@
           }
           .note-area { width: 100%; flex: none; }
           .note-container { width: 100%; flex: none; }
-          .note-box { width: 100%; height: auto; min-height: 34px; }
+          .note-area { width: 100%; flex: none; }
+          .note-container { width: 100%; flex: none; }
+          .note-box { width: 100%; height: auto; max-height: 20px; }
           .button-container {
             bottom: 10px; right: 10px; left: 10px; justify-content: center; gap: 8px;
           }
@@ -497,15 +519,16 @@
         
         /* 超小屏幕（600px以下） */
         @media (max-width: 600px) {
-          :root { --header-height: 140px; }
+          :root { --header-height: 160px; }
           .file-search-container { flex-direction: row; gap: 6px; }
           .file-buttons-wrapper { width: 100%; flex: none; gap: 6px; }
           .file-item { width: calc(50% - 3px); justify-content: space-between; }
           .custom-file-upload { flex: 1; max-width: none; justify-content: center; padding: 6px; }
           .file-name-text { font-size: 11px; max-width: 70px; }
           .clear-btn { font-size: 18px; }
-          .search-box { width: calc(100% - 76px); flex: none; }
-          .bilingual-btn { width: 70px; flex: none; padding: 6px 4px; }
+          .action-group { width: 100%; flex-wrap: wrap; gap: 6px; }
+          .search-box { width: 100%; flex: none; }
+          .bilingual-btn, .toggle-notes-btn { flex: 1; padding: 6px 4px; text-align: center; }
           main { padding-top: calc(var(--header-height) + 12px); }
         }
     </style>
@@ -538,8 +561,11 @@
               </div>
             </div>
 
-            <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字" />
-            <button id="bilingualBtn" class="bilingual-btn">雙語顯示</button>
+            <div class="action-group">
+                <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字" />
+                <button id="toggleNotesBtn" class="toggle-notes-btn">隱藏筆記</button>
+                <button id="bilingualBtn" class="bilingual-btn">雙語顯示</button>
+            </div>
         </div>
     </header>
 
@@ -570,6 +596,7 @@
         let notesData = {};
         let noteCount = 0;
         let bilingualEnabled = true; 
+        let notesVisible = true; // 筆記顯示狀態
         
         let file1Data = { name: "", subtitles: [] };
         let file2Data = { name: "", subtitles: [] };
@@ -644,6 +671,9 @@
         
         // 【核心同步】保證左右框永遠等高
         function autoResizeTextarea(textarea) {
+          // 如果處於隱藏筆記狀態，不需計算高度
+          if (!notesVisible) return;
+
           const subtitleRow = textarea.closest('.subtitle');
           if (!subtitleRow) return;
           
@@ -657,15 +687,23 @@
           
           let finalHeight = Math.max(textHeight, noteHeight, 34);
           
-          if (finalHeight >= 150) {
+          // 如果是大於 900px 的桌面版，限制 150px
+          if (window.innerWidth > 900 && finalHeight >= 150) {
             textarea.style.overflowY = 'auto';
             finalHeight = 150;
+          } else if (window.innerWidth <= 900) {
+            // 手機版讓它自然流動，靠 CSS max-height 控制
+            textarea.style.overflowY = 'auto';
+            finalHeight = Math.max(textHeight, 34); // 手機版上下分開，以左側文字為準即可
           } else {
             textarea.style.overflowY = 'hidden';
           }
           
-          textarea.style.height = finalHeight + 'px';
-          if (textBox) textBox.style.height = finalHeight + 'px';
+          // 只有在大於 900px 時才強制兩邊高度相同
+          if (window.innerWidth > 900) {
+            textarea.style.height = finalHeight + 'px';
+            if (textBox) textBox.style.height = finalHeight + 'px';
+          }
         }
         
         function isJapaneseText(text) {
@@ -728,7 +766,7 @@
           }
         }
 
-        // 【修正 1】強大的單檔處理邏輯，自動對齊時間碼
+        // 單檔處理邏輯，自動對齊時間碼
         function processSingleFileSubtitles(subtitles) {
           const processed = [];
           const hasTimecode = subtitles.length > 0 && subtitles[0].startTime;
@@ -737,13 +775,12 @@
             const timecodeMap = new Map();
             subtitles.forEach(sub => {
               if (!sub.startTime) return;
-              const timeKey = sub.startTime.split(/[,.]/)[0]; // 忽略毫秒，精準對齊
+              const timeKey = sub.startTime.split(/[,.]/)[0]; 
               if (!timecodeMap.has(timeKey)) {
                 timecodeMap.set(timeKey, { jpTexts: [], zhTexts: [], rawTexts: [], startTime: sub.startTime, endTime: sub.endTime });
               }
               const group = timecodeMap.get(timeKey);
               
-              // 支援在同一個 subtitle 區塊內換行（如 SRT）
               const lines = sub.text.split('\n').map(t => t.trim()).filter(t => t);
               lines.forEach(line => {
                 if (isJapaneseText(line)) group.jpTexts.push(line);
@@ -781,7 +818,6 @@
               });
             });
           } else {
-            // 如果沒有時間碼 (TXT, DOCX, PDF)，則合併相鄰的日文和中文
             let i = 0;
             while (i < subtitles.length) {
               const currentText = subtitles[i].text;
@@ -905,7 +941,7 @@
               return { 
                 startTime: match ? match[1] : '', 
                 endTime: match ? match[2] : '', 
-                text: lines.slice(2).join('\n') // 支援多行顯示
+                text: lines.slice(2).join('\n') 
               };
             }
             return null;
@@ -922,7 +958,7 @@
                 return { 
                   startTime: parts[1], 
                   endTime: parts[2], 
-                  text: parts.slice(9).join(',').replace(/\\N/g, '\n').replace(/\{.*?\}/g, '').trim() // 支援多行
+                  text: parts.slice(9).join(',').replace(/\\N/g, '\n').replace(/\{.*?\}/g, '').trim() 
                 };
               }
               return null;
@@ -943,7 +979,6 @@
           }).catch(err => { alert('DOCX 解析失敗'); });
         }
         
-        // 【修正 2】PDF 解析恢復 Y 軸追蹤，完美分句
         function parsePDF(arrayBuffer, callback) {
           pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
           pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(pdf => {
@@ -953,7 +988,6 @@
                 let lines = [], current = [], lastY = null;
                 content.items.forEach(item => {
                   const y = (item.transform && item.transform[5] != null) ? item.transform[5] : null;
-                  // 若 Y 座標幾乎不變，視為同一行
                   if (lastY === null || y === null || Math.abs(y - lastY) < 5) {
                     current.push(item.str);
                   } else {
@@ -1224,13 +1258,30 @@
         });
 
         // ==================== 匯入/匯出與其他功能 ====================
+        
+        // 雙語顯示切換
         document.getElementById('bilingualBtn').addEventListener('click', function() {
           bilingualEnabled = !bilingualEnabled;
           this.textContent = bilingualEnabled ? '單語顯示' : '雙語顯示';
           document.body.classList.toggle('single-language', !bilingualEnabled);
           
-          // 切換顯示模式時，強制重新同步高度
           document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
+        });
+
+        // 隱藏筆記功能切換
+        document.getElementById('toggleNotesBtn').addEventListener('click', function() {
+          notesVisible = !notesVisible;
+          this.textContent = notesVisible ? '隱藏筆記' : '顯示筆記';
+          document.body.classList.toggle('hide-notes', !notesVisible);
+          this.classList.toggle('active', !notesVisible);
+          
+          // 若恢復顯示，重算所有框的高度，讓介面不跑版
+          if (notesVisible) {
+            document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
+          } else {
+            // 隱藏時，清除文字框被寫死的高度，讓它自然適應
+            document.querySelectorAll('.text-box').forEach(textBox => textBox.style.height = 'auto');
+          }
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
@@ -1322,6 +1373,12 @@
           if (noteCount > 0) { e.preventDefault(); e.returnValue = '有未匯出的筆記，確定離開？'; }
         });
         
+        window.addEventListener('resize', debounce(() => {
+          if (notesVisible) {
+            document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
+          }
+        }, 200));
+
         document.addEventListener('DOMContentLoaded', () => {
           updateFileInfo('請在上面分別放入「檔案1」與「檔案2」，系統將自動合併。', 5000);
         });
