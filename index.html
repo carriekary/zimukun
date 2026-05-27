@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>小野字幕君 - 中日雙語字幕工具</title>
+    <title>小野字幕君</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
 
@@ -12,7 +12,7 @@
 
     <style>
         :root {
-          --header-height: 90px;
+          --header-height: 100px;
           --accent: #2c3e50;
           --subtitle-min-height: 30px;
           --gutter: 12px;
@@ -242,9 +242,9 @@
         
         .note-box {
           width: 550px;
-          height: 34px;
-          min-height: 34px;
-          max-height: 150px;
+          height: 35px;
+          min-height: 35px;
+          max-height: 100px;
           padding: 8px 12px;
           border-radius: 6px;
           border: 1px solid #ddd;
@@ -445,7 +445,7 @@
           }
           .note-area { width: 100%; }
           .note-container { width: 100%; }
-          .note-box { width: 100%; height: 34px; }
+          .note-box { width: 100%; height: 20px; }
           .button-container {
             bottom: 10px; right: 10px; left: 10px; justify-content: center; gap: 8px;
           }
@@ -476,17 +476,17 @@
             <div class="file-buttons-wrapper">
               <label class="custom-file-upload" id="labelFile1">
                   <input id="fileInput1" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
-                  <span class="file-icon">📁</span>
+                  <span class="file-icon">💡</span>
                   <span class="file-name-text" id="textFile1">選擇檔案 1</span>
               </label>
               <label class="custom-file-upload" id="labelFile2">
                   <input id="fileInput2" type="file" accept=".ass,.srt,.docx,.txt,.pdf" />
-                  <span class="file-icon">📁</span>
+                  <span class="file-icon">💡</span>
                   <span class="file-name-text" id="textFile2">選擇檔案 2</span>
               </label>
             </div>
 
-            <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字 (顯示前後句)" />
+            <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字" />
             <button id="bilingualBtn" class="bilingual-btn">雙語顯示</button>
         </div>
     </header>
