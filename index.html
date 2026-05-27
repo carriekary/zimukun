@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>小野字幕君</title>
+    <title>小野字幕君 - 中日雙語字幕工具</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
 
@@ -74,7 +74,6 @@
           flex-wrap: wrap;
         }
 
-        /* 檔案上傳區塊新設計 */
         .file-buttons-wrapper {
           display: flex;
           gap: 8px;
@@ -116,7 +115,6 @@
           font-size: 14px;
         }
 
-        /* 有檔案時的視覺回饋 */
         .custom-file-upload.has-file {
           background: rgba(46, 204, 113, 0.2);
           border-color: #2ecc71;
@@ -139,7 +137,6 @@
           box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
         
-        /* 主內容 */
         main {
           padding: calc(var(--header-height) + 12px) var(--container-padding) 140px;
           max-width: var(--max-width);
@@ -150,7 +147,6 @@
           display: block;
         }
         
-        /* 每行區塊 */
         .row {
           display: block;
           margin: 3px 0;
@@ -178,12 +174,10 @@
           box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
         }
         
-        /* 標示有寫入筆記的左側橘線 */
         .subtitle.has-written-note {
           border-left: 4px solid #ff9800;
         }
         
-        /* 左側文字框 */
         .text-box {
           flex: 1;
           min-height: 35px;
@@ -205,7 +199,6 @@
           user-select: text;
         }
         
-        /* 日語文本樣式 */
         .japanese-text {
           font-family: "Hiragino Sans", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
           font-size: 16px;
@@ -213,7 +206,6 @@
           margin-bottom: 4px;
         }
         
-        /* 中文文本樣式 */
         .chinese-text {
           font-family: "Arial", "Microsoft YaHei", sans-serif;
           font-size: 15px;
@@ -223,7 +215,6 @@
           margin-top: 4px;
         }
         
-        /* 單語模式 - 只顯示一種語言 */
         .single-language .chinese-text {
           display: none;
         }
@@ -233,7 +224,6 @@
           border: none;
         }
         
-        /* 右側區域 */
         .note-area {
           display: flex;
           flex-direction: row;
@@ -243,7 +233,6 @@
           min-width: 0;
         }
         
-        /* 筆記框容器始終顯示 */
         .note-container {
           flex: 1;
           display: flex;
@@ -251,7 +240,6 @@
           min-width: 0;
         }
         
-        /* 筆記框始終展開 */
         .note-box {
           width: 550px;
           height: 34px;
@@ -267,12 +255,12 @@
           box-sizing: border-box;
           resize: vertical;
           font-family: inherit;
-          transition: all 0.2s ease;
+          /* 【關鍵修正】只對顏色/陰影做過渡，排除 height 高度，避免干擾 Javascript 重算高度 */
+          transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
           overflow-y: hidden;
           display: block;
         }
         
-        /* 筆記有內容時的樣式 */
         .note-box.has-content {
           border-color: #ff9800;
           background: #fff8e1;
@@ -280,7 +268,6 @@
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
-        /* 編輯時的樣式 */
         .note-box:focus {
           outline: none;
           border-color: #4CAF50;
@@ -289,7 +276,6 @@
           box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
         }
         
-        /* 文件信息 */
         .file-info {
           position: fixed;
           bottom: 20px;
@@ -304,7 +290,6 @@
           max-width: 300px;
         }
         
-        /* highlight */
         .highlight {
           background: #ffff00;
           color: #d32f2f;
@@ -313,7 +298,6 @@
           border-radius: 2px;
         }
         
-        /* 加載指示器 */
         .loading {
           text-align: center;
           padding: 40px;
@@ -321,7 +305,6 @@
           font-size: 14px;
         }
         
-        /* 按鈕容器 */
         .button-container {
           position: fixed;
           bottom: 20px;
@@ -331,7 +314,6 @@
           z-index: 100;
         }
         
-        /* 匯出按鈕 */
         .export-btn {
           background: var(--accent);
           color: white;
@@ -350,7 +332,6 @@
           transform: translateY(-1px);
         }
         
-        /* 導入按鈕 */
         .import-btn {
           background: #28a745;
           color: white;
@@ -369,7 +350,6 @@
           transform: translateY(-1px);
         }
         
-        /* 全局狀態指示器 */
         .global-status {
           position: fixed;
           top: calc(var(--header-height) + 10px);
@@ -388,7 +368,6 @@
           display: block;
         }
         
-        /* 進度條 */
         .progress-container {
           position: fixed;
           top: var(--header-height);
@@ -407,7 +386,6 @@
           transition: width 0.3s ease;
         }
         
-        /* 雙語切換按鈕 */
         .bilingual-btn {
           background: #9b59b6;
           color: white;
@@ -433,149 +411,56 @@
           :root {
             --header-height: 120px;
           }
-          
           .header {
             flex-direction: column;
             align-items: flex-start;
             justify-content: center;
             padding: 12px 16px;
           }
-          
           .header-left {
             width: 100%;
             margin-bottom: 6px;
           }
-          
-          .header-left h1 {
-            font-size: 18px;
-            line-height: 1.2;
-          }
-          
-          .header-left p {
-            font-size: 11px;
-            line-height: 1.3;
-          }
-          
+          .header-left h1 { font-size: 18px; line-height: 1.2; }
+          .header-left p { font-size: 11px; line-height: 1.3; }
           .file-search-container {
-            width: 100%;
-            justify-content: flex-start;
-            gap: 6px;
+            width: 100%; justify-content: flex-start; gap: 6px;
           }
-          
           .custom-file-upload {
-            padding: 4px 10px;
-            max-width: 130px;
-            font-size: 12px;
+            padding: 4px 10px; max-width: 130px; font-size: 12px;
           }
-          
           .search-box {
-            flex: 1;
-            min-width: 120px;
-            width: auto;
-            font-size: 12px;
+            flex: 1; min-width: 120px; width: auto; font-size: 12px;
           }
-          
           .bilingual-btn {
-            font-size: 11px;
-            padding: 5px 10px;
+            font-size: 11px; padding: 5px 10px;
           }
-          
-          main {
-            padding-top: calc(var(--header-height) + 16px);
-            padding-bottom: 180px;
-          }
-          
+          main { padding-top: calc(var(--header-height) + 16px); padding-bottom: 180px; }
           .subtitle {
-            flex-direction: column;
-            gap: 8px;
-            padding: 8px 10px;
-            position: relative;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(0, 0, 0, 0.08);
+            flex-direction: column; gap: 8px; padding: 8px 10px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); border: 1px solid rgba(0, 0, 0, 0.08);
           }
-          
           .text-box {
-            width: 100%;
-            padding: 6px 10px;
-            height: auto;
-            min-height: 34px;
-            font-size: 14px;
-            line-height: 1.35;
-            color: #333;
-            background: #fdfdfd;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease;
-            white-space: normal;
-            word-break: break-word;
+            width: 100%; padding: 6px 10px; height: auto; min-height: 34px; font-size: 14px;
           }
-          
-          .note-area {
-            width: 100%;
-          }
-
-          .note-container {
-            width: 100%;
-          }
-          
-          .note-box {
-            width: 100%;
-            height: 34px;
-          }
-          
+          .note-area { width: 100%; }
+          .note-container { width: 100%; }
+          .note-box { width: 100%; height: 34px; }
           .button-container {
-            bottom: 10px;
-            right: 10px;
-            left: 10px;
-            justify-content: center;
-            gap: 8px;
+            bottom: 10px; right: 10px; left: 10px; justify-content: center; gap: 8px;
           }
         }
         
         /* 超小屏幕（600px以下） */
         @media (max-width: 600px) {
-          :root {
-            --header-height: 130px; 
-          }
-          
-          .file-search-container {
-            flex-direction: row;
-            gap: 6px;
-          }
-          
-          .file-buttons-wrapper {
-            width: 100%;
-            flex: none;
-            gap: 6px;
-          }
-
-          .custom-file-upload {
-            flex: 1;
-            max-width: none;
-            justify-content: center;
-            padding: 6px;
-          }
-
-          .file-name-text {
-            font-size: 11px;
-            max-width: 80px; 
-          }
-          
-          .search-box {
-            width: calc(100% - 76px);
-            flex: none;
-          }
-          
-          .bilingual-btn {
-            width: 70px;
-            flex: none;
-            padding: 6px 4px;
-          }
-
-          main {
-            padding-top: calc(var(--header-height) + 12px);
-          }
+          :root { --header-height: 130px; }
+          .file-search-container { flex-direction: row; gap: 6px; }
+          .file-buttons-wrapper { width: 100%; flex: none; gap: 6px; }
+          .custom-file-upload { flex: 1; max-width: none; justify-content: center; padding: 6px; }
+          .file-name-text { font-size: 11px; max-width: 80px; }
+          .search-box { width: calc(100% - 76px); flex: none; }
+          .bilingual-btn { width: 70px; flex: none; padding: 6px 4px; }
+          main { padding-top: calc(var(--header-height) + 12px); }
         }
     </style>
 </head>
@@ -601,7 +486,7 @@
               </label>
             </div>
 
-            <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字" />
+            <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字 (顯示前後句)" />
             <button id="bilingualBtn" class="bilingual-btn">雙語顯示</button>
         </div>
     </header>
@@ -611,7 +496,6 @@
     </div>
 
     <div class="global-status" id="globalStatus"></div>
-
     <div class="file-info" id="fileInfo" style="display:none;"></div>
 
     <div class="button-container">
@@ -705,18 +589,28 @@
           }
         }
         
+        // 【關鍵修正】高度自動調整邏輯優化
         function autoResizeTextarea(textarea) {
-          textarea.style.height = '34px';
-          const computedStyle = window.getComputedStyle(textarea);
-          let maxHeight = parseInt(computedStyle.maxHeight, 10) || 300;
-          const newHeight = Math.min(textarea.scrollHeight, maxHeight);
-          textarea.style.height = Math.max(newHeight, 34) + 'px';
-          textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+          // 1. 強制將高度設回 auto，使其能「縮小」至文字實際行數
+          textarea.style.height = 'auto';
+          
+          // 2. 獲取內容的實際捲動高度
+          const newHeight = textarea.scrollHeight;
+          
+          // 3. 設定新高度
+          textarea.style.height = newHeight + 'px';
+          
+          // 4. 若超過上限 (150px)，顯示內部捲動軸
+          if (newHeight >= 150) {
+            textarea.style.overflowY = 'auto';
+          } else {
+            textarea.style.overflowY = 'hidden';
+          }
         }
         
         function isJapaneseText(text) {
           if (!text) return false;
-          return /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+          return /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
         }
         
         function isChineseText(text) {
@@ -735,14 +629,24 @@
               let jpSubs = file1Data.subtitles;
               let zhSubs = file2Data.subtitles;
               
-              let f2JpCount = 0;
-              const sample = Math.min(10, file2Data.subtitles.length);
-              for(let i=0; i<sample; i++) {
-                if (isJapaneseText(file2Data.subtitles[i].text)) f2JpCount++;
+              let f1KanaCount = 0;
+              let f2KanaCount = 0;
+              const sample1 = Math.min(20, file1Data.subtitles.length);
+              const sample2 = Math.min(20, file2Data.subtitles.length);
+              
+              for(let i=0; i<sample1; i++) {
+                if (isJapaneseText(file1Data.subtitles[i].text)) f1KanaCount++;
               }
-              if (f2JpCount > sample / 2) {
+              for(let i=0; i<sample2; i++) {
+                if (isJapaneseText(file2Data.subtitles[i].text)) f2KanaCount++;
+              }
+
+              if (f2KanaCount > f1KanaCount) {
                 jpSubs = file2Data.subtitles;
                 zhSubs = file1Data.subtitles;
+              } else {
+                jpSubs = file1Data.subtitles;
+                zhSubs = file2Data.subtitles;
               }
 
               const merged = mergeSubtitlesArrays(jpSubs, zhSubs);
@@ -1177,10 +1081,10 @@
                   const noteText = noteEl.textContent.trim();
                   
                   if (subText && noteText) {
-                    // 修正的匹配邏輯：同時比對雙語合併結果、日文原文、原始文
                     const matchIdx = processedSubtitles.findIndex(s => {
-                      const combinedTitle = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
-                      return combinedTitle === subText || s.japanese === subText || s.originalText === subText;
+                      const combinedTitle1 = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
+                      const combinedTitle2 = s.chinese ? `${s.chinese} | ${s.japanese}` : s.japanese;
+                      return combinedTitle1 === subText || combinedTitle2 === subText || s.japanese === subText || s.originalText === subText;
                     });
                     
                     if (matchIdx !== -1) {
@@ -1206,7 +1110,6 @@
           };
           reader.readAsText(file, 'utf-8');
           
-          // 關鍵修復：清空檔案選擇器，允許重複選擇同一個檔案
           this.value = '';
         });
 
