@@ -175,8 +175,6 @@
           font-size: 13px;
           transition: all 0.2s ease;
         }
-        .bilingual-btn:hover { background: #8e44ad; transform: translateY(-1px); }
-        .bilingual-btn.active { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); }
 
         .toggle-notes-btn {
           background: #3498db;
@@ -188,7 +186,7 @@
           font-size: 13px;
           transition: all 0.2s ease;
         }
-     
+
         body.hide-notes .note-area {
           display: none !important;
         }
@@ -561,7 +559,7 @@
     <div class="button-container">
         <button class="import-btn" id="importBtn">導入筆記</button>
         <button class="export-btn" id="exportBtn" style="display:none;">導出 HTML</button>
-        <button class="export-btn csv-btn" id="exportCsvBtn" style="display:none;">匯出 CSV</button>
+        <button class="export-btn csv-btn" id="exportCsvBtn" style="display:none;">導出 CSV</button>
     </div>
 
     <input type="file" id="importFileInput" accept=".html" style="display:none" />
@@ -744,7 +742,6 @@
           }
         }
 
-        // 單檔處理邏輯，自動對齊時間碼
         function processSingleFileSubtitles(subtitles) {
           const processed = [];
           const hasTimecode = subtitles.length > 0 && subtitles[0].startTime;
@@ -1071,14 +1068,12 @@
         
         // ==================== 【資料驅動搜尋 與 UI 分批渲染】 ====================
         
-        // 1. 產生單行 HTML 的函數，現在接收的參數是處理好的資料包 (item)
         function createSubtitleRowHTML(item) {
           const { sub, originalIndex, isContext, highlightJp, highlightZh } = item;
           const noteContent = notesData[originalIndex] || '';
           const hasWrittenClass = noteContent ? 'has-written-note' : '';
           const hasContentClass = noteContent ? 'has-content' : '';
           
-          // 如果是前後文，透明度降低
           const opacityStyle = isContext ? 'style="opacity: 0.5;"' : '';
           
           let japaneseHTML = `<div class="japanese-text">${highlightJp}</div>`;
@@ -1098,12 +1093,10 @@
             </div>`;
         }
         
-        // 2. 更新與計算要顯示的資料 (支援搜尋過濾)
         function updateDisplay(query = '') {
             let displayData = [];
             
             if (!query) {
-                // 沒有搜尋條件：顯示全部
                 displayData = processedSubtitles.map((sub, i) => ({
                     sub,
                     originalIndex: i,
@@ -1112,7 +1105,6 @@
                     highlightZh: escapeHtml(sub.chinese || '')
                 }));
             } else {
-                // 有搜尋條件：在陣列層級快速篩選
                 const regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
                 let matchIndices = new Set();
                 let displayIndices = new Set();
@@ -1133,7 +1125,6 @@
                     let highlightJp = escapeHtml(sub.japanese || '');
                     let highlightZh = escapeHtml(sub.chinese || '');
 
-                    // 若為精準命中的句子，加上黃底高亮標籤
                     if (isMatch) {
                         highlightJp = highlightJp.replace(regex, '<span class="highlight">$1</span>');
                         highlightZh = highlightZh.replace(regex, '<span class="highlight">$1</span>');
@@ -1155,15 +1146,12 @@
                 }
             }
             
-            // 將過濾好的資料交給渲染函數
             renderDisplayData(displayData);
         }
         
-        // 3. 負責將資料畫到畫面上的函數 (利用分批繪製保持順暢)
         function renderDisplayData(displayData) {
           const container = document.getElementById('subtitles');
           
-          // 如果有正在跑的渲染任務，立刻取消
           if (renderAnimationId) cancelAnimationFrame(renderAnimationId);
           container.innerHTML = ''; 
           
@@ -1193,7 +1181,6 @@
           renderNextChunk();
         }
         
-        // 綁定搜尋框事件
         document.getElementById('searchBox').addEventListener('input', function(){
             const q = this.value.trim();
             updateDisplay(q);
@@ -1291,6 +1278,7 @@
           document.getElementById('importFileInput').click();
         });
 
+        // ==================== 強化版匯入功能 (支援時間碼匹配) ====================
         document.getElementById('importFileInput').addEventListener('change', function(e) {
           const file = e.target.files[0];
           if (!file) return;
@@ -1308,36 +1296,69 @@
 
               let importedCount = 0;
               let skippedCount = 0;
+              let lastMatchIdx = -1; 
+
+              const normalizeText = (text) => text.replace(/\s+/g, '');
 
               exportItems.forEach(item => {
                 const subtitleEl = item.querySelector('.export-note-subtitle');
                 const noteEl = item.querySelector('.export-note-content');
+                const timecodeEl = item.querySelector('.export-timecode'); // 抓取新版時間碼
+                
+                const originalIndex = item.getAttribute('data-original-index'); 
+                const timecodeText = timecodeEl ? timecodeEl.textContent.replace('⏱', '').trim() : '';
                 
                 if (subtitleEl && noteEl) {
                   const subText = subtitleEl.textContent.trim();
                   const noteText = noteEl.textContent.trim();
+                  let matchIdx = -1;
+
+                  // 1. 優先使用隱藏行號 (100% 精準)
+                  if (originalIndex !== null && !isNaN(parseInt(originalIndex))) {
+                    matchIdx = parseInt(originalIndex);
+                  } 
+                  // 2. 其次使用時間碼匹配 (解決重複台詞問題)
+                  else if (timecodeText) {
+                    matchIdx = processedSubtitles.findIndex(s => {
+                        const sTime = (s.startTime && s.endTime) ? `${s.startTime} --> ${s.endTime}` : '';
+                        return sTime === timecodeText;
+                    });
+                  }
                   
-                  if (subText && noteText) {
-                    const matchIdx = processedSubtitles.findIndex(s => {
-                      const combinedTitle1 = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
-                      const combinedTitle2 = s.chinese ? `${s.chinese} | ${s.japanese}` : s.japanese;
-                      return combinedTitle1 === subText || combinedTitle2 === subText || s.japanese === subText || s.originalText === subText;
+                  // 3. 還是找不到，使用文字模糊順序推導
+                  if (matchIdx === -1 && subText && noteText) {
+                    const targetSubText = normalizeText(subText);
+                    
+                    matchIdx = processedSubtitles.findIndex((s, idx) => {
+                      if (idx <= lastMatchIdx) return false;
+                      const t1 = normalizeText(s.chinese ? `${s.japanese}|${s.chinese}` : s.japanese);
+                      const t2 = normalizeText(s.chinese ? `${s.chinese}|${s.japanese}` : s.japanese);
+                      return t1 === targetSubText || t2 === targetSubText || normalizeText(s.japanese) === targetSubText || normalizeText(s.originalText) === targetSubText;
                     });
                     
-                    if (matchIdx !== -1) {
-                      notesData[matchIdx] = noteText;
-                      importedCount++;
-                    } else {
-                      skippedCount++;
+                    if (matchIdx === -1) {
+                      matchIdx = processedSubtitles.findIndex(s => {
+                        const t1 = normalizeText(s.chinese ? `${s.japanese}|${s.chinese}` : s.japanese);
+                        const t2 = normalizeText(s.chinese ? `${s.chinese}|${s.japanese}` : s.japanese);
+                        return t1 === targetSubText || t2 === targetSubText || normalizeText(s.japanese) === targetSubText || normalizeText(s.originalText) === targetSubText;
+                      });
                     }
+                  }
+                  
+                  if (matchIdx !== -1 && matchIdx < processedSubtitles.length) {
+                    notesData[matchIdx] = noteText;
+                    lastMatchIdx = matchIdx; 
+                    importedCount++;
+                  } else {
+                    skippedCount++;
                   }
                 }
               });
               
               if (importedCount > 0) {
-                updateDisplay(); // 重新渲染畫面套用筆記
+                updateDisplay(); 
                 updateNoteCount();
-                showGlobalStatus(`成功導入 ${importedCount} 條筆記${skippedCount > 0 ? `，${skippedCount} 條未匹配` : ''}`, 4000);
+                showGlobalStatus(`成功導入 ${importedCount} 條筆記${skippedCount > 0 ? `，${skippedCount} 條因無對應字幕未匹配` : ''}`, 4000);
               } else {
                 showGlobalStatus('未成功導入任何筆記，請檢查字幕文件是否匹配', 3000);
               }
@@ -1350,20 +1371,29 @@
           this.value = '';
         });
 
-        // 匯出 HTML 筆記
+        // ==================== 強化版 HTML 匯出 (包含時間碼) ====================
         document.getElementById('exportBtn').addEventListener('click', () => {
           const notes = Object.entries(notesData).filter(([i, n]) => n.trim());
           const items = notes.map(([idx, note], i) => {
             const s = processedSubtitles[idx];
             const title = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
-            return `<div class="export-item">
-              <div class="export-header"><div class="export-number">${i+1}.</div><div class="export-note-subtitle">${escapeHtml(title)}</div></div>
-              <div class="export-note-content">${escapeHtml(note)}</div>
-            </div><hr/>`;
+            
+            // 加入時間碼顯示
+            const timecode = (s.startTime && s.endTime) ? `${s.startTime} --> ${s.endTime}` : '';
+            const timecodeHtml = timecode ? `<div class="export-timecode" style="color:#666; font-size:12px; margin-bottom:6px; margin-left:24px;">⏱ ${escapeHtml(timecode)}</div>` : '';
+            
+            return `<div class="export-item" data-original-index="${idx}">
+              <div class="export-header" style="display:flex; align-items:baseline; gap:8px;">
+                <div class="export-number" style="font-weight:bold;">${i+1}.</div>
+                <div class="export-note-subtitle" style="font-weight:bold; color:#2c3e50;">${escapeHtml(title)}</div>
+              </div>
+              ${timecodeHtml}
+              <div class="export-note-content" style="color:#e67e22; white-space:pre-wrap; background:#fff8e1; padding:10px; border-radius:4px; border-left:4px solid #ff9800; margin-bottom: 16px;">${escapeHtml(note)}</div>
+            </div><hr style="border:0; border-top:1px dashed #eee; margin:16px 0;" />`;
           }).join('');
           
-          const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{padding:20px;font-family:sans-serif;}.export-item{margin:15px 0;}.export-note-content{color:#e67e22;white-space:pre-wrap;}</style></head>
-          <body><h2>${escapeHtml(currentFileName)} - 筆記匯出</h2>${items}</body></html>`;
+          const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{padding:20px;font-family:sans-serif;}</style></head>
+          <body><h2>${escapeHtml(currentFileName)} - 筆記匯出</h2><hr style="margin-bottom:20px;"/>${items}</body></html>`;
           
           const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
           const a = document.createElement('a');
@@ -1372,17 +1402,15 @@
           a.click();
         });
 
-        // 匯出 CSV 報表
+        // ==================== CSV 匯出 ====================
         document.getElementById('exportCsvBtn').addEventListener('click', () => {
           if(processedSubtitles.length === 0) return alert('沒有資料可以匯出');
           
-          // 加上 UTF-8 BOM，確保 Excel 開啟不會出現亂碼
           let csvContent = '\uFEFF'; 
           csvContent += "序號,時間軸,日文字幕,中文字幕,你的筆記\n";
 
           const escapeCSV = (str) => {
              if (str === null || str === undefined) return '""';
-             // 處理字串內的雙引號 (替換為兩個雙引號) 並用雙引號包起整個欄位
              return `"${String(str).replace(/"/g, '""')}"`;
           };
 
