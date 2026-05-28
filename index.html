@@ -74,7 +74,6 @@
           flex-wrap: wrap;
         }
 
-        /* 檔案上傳區塊新設計 */
         .file-buttons-wrapper {
           display: flex;
           gap: 12px;
@@ -122,16 +121,14 @@
           font-size: 14px;
         }
 
-        /* 有檔案時的視覺回饋 */
         .custom-file-upload.has-file {
           background: rgba(46, 204, 113, 0.2);
           border-color: #2ecc71;
           color: #e8f8f5;
         }
 
-        /* 刪除檔案按鈕 */
         .clear-btn {
-          display: none; /* 預設隱藏 */
+          display: none; 
           cursor: pointer;
           color: #ff5252;
           font-size: 20px;
@@ -145,7 +142,6 @@
           transform: scale(1.2);
         }
         
-        /* 頂部操作區組合 (搜尋 + 按鈕) */
         .action-group {
           display: flex;
           gap: 8px;
@@ -169,7 +165,6 @@
           box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
         
-        /* 雙語切換按鈕 */
         .bilingual-btn {
           background: #9b59b6;
           color: white;
@@ -183,7 +178,6 @@
         .bilingual-btn:hover { background: #8e44ad; transform: translateY(-1px); }
         .bilingual-btn.active { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); }
 
-        /* 隱藏筆記切換按鈕 */
         .toggle-notes-btn {
           background: #3498db;
           color: white;
@@ -194,13 +188,11 @@
           font-size: 13px;
           transition: all 0.2s ease;
         }
-
-        /* 全域隱藏筆記狀態 */
+     
         body.hide-notes .note-area {
           display: none !important;
         }
         
-        /* 主內容 */
         main {
           padding: calc(var(--header-height) + 12px) var(--container-padding) 140px;
           max-width: var(--max-width);
@@ -211,7 +203,6 @@
           display: block;
         }
         
-        /* 每行區塊 */
         .row {
           display: block;
           margin: 3px 0;
@@ -228,7 +219,7 @@
           min-height: var(--subtitle-min-height);
           display: flex;
           flex-direction: row;
-          align-items: stretch; /* 讓文字框和筆記框高度一致 */
+          align-items: stretch;
           gap: var(--gutter);
           border: 1px solid rgba(0, 0, 0, 0.05);
           transition: all 0.2s ease;
@@ -239,12 +230,10 @@
           box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
         }
         
-        /* 標示有寫入筆記的左側橘線 */
         .subtitle.has-written-note {
           border-left: 4px solid #ff9800;
         }
         
-        /* 左側文字框 */
         .text-box {
           flex: 1;
           min-height: 35px;
@@ -255,7 +244,7 @@
           font-size: 15px;
           line-height: 1.4;
           color: #222;
-          white-space: pre-wrap; /* 支援多行文字斷行顯示 */
+          white-space: pre-wrap; 
           word-break: break-word;
           display: flex;
           flex-direction: column;
@@ -266,7 +255,6 @@
           user-select: text;
         }
         
-        /* 日語文本樣式 */
         .japanese-text {
           font-family: "Hiragino Sans", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
           font-size: 16px;
@@ -274,7 +262,6 @@
           margin-bottom: 4px;
         }
         
-        /* 中文文本樣式 */
         .chinese-text {
           font-family: "Arial", "Microsoft YaHei", sans-serif;
           font-size: 15px;
@@ -284,7 +271,6 @@
           margin-top: 4px;
         }
         
-        /* 單語模式 - 只顯示一種語言 */
         .single-language .chinese-text {
           display: none;
         }
@@ -294,7 +280,6 @@
           border: none;
         }
         
-        /* 右側區域 */
         .note-area {
           display: flex;
           flex-direction: row;
@@ -305,7 +290,6 @@
           flex: 1;
         }
         
-        /* 筆記框容器始終顯示 */
         .note-container {
           flex: 1;
           display: flex;
@@ -313,7 +297,6 @@
           min-width: 0;
         }
         
-        /* 筆記框始終展開 */
         .note-box {
           width: 100%;
           min-height: 34px;
@@ -333,7 +316,6 @@
           display: block;
         }
         
-        /* 筆記有內容時的樣式 */
         .note-box.has-content {
           border-color: #ff9800;
           background: #fff8e1;
@@ -341,7 +323,6 @@
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
-        /* 編輯時的樣式 */
         .note-box:focus {
           outline: none;
           border-color: #4CAF50;
@@ -350,7 +331,6 @@
           box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
         }
         
-        /* 文件信息 */
         .file-info {
           position: fixed;
           bottom: 20px;
@@ -365,7 +345,6 @@
           max-width: 300px;
         }
         
-        /* highlight */
         .highlight {
           background: #ffff00;
           color: #d32f2f;
@@ -374,7 +353,6 @@
           border-radius: 2px;
         }
         
-        /* 加載指示器 */
         .loading {
           text-align: center;
           padding: 40px;
@@ -382,7 +360,6 @@
           font-size: 14px;
         }
         
-        /* 按鈕容器 */
         .button-container {
           position: fixed;
           bottom: 20px;
@@ -392,7 +369,6 @@
           z-index: 100;
         }
         
-        /* 匯出按鈕 */
         .export-btn {
           background: var(--accent);
           color: white;
@@ -411,7 +387,6 @@
           transform: translateY(-1px);
         }
         
-        /* 導入按鈕 */
         .import-btn {
           background: #28a745;
           color: white;
@@ -429,8 +404,14 @@
           background: #218838;
           transform: translateY(-1px);
         }
+
+        .csv-btn {
+          background: #27ae60;
+        }
+        .csv-btn:hover {
+          background: #219653;
+        }
         
-        /* 全局狀態指示器 */
         .global-status {
           position: fixed;
           top: calc(var(--header-height) + 10px);
@@ -449,7 +430,6 @@
           display: block;
         }
         
-        /* 進度條 */
         .progress-container {
           position: fixed;
           top: var(--header-height);
@@ -468,7 +448,6 @@
           transition: width 0.3s ease;
         }
         
-        /* 中屏幕（600px-900px） */
         @media (max-width: 900px) {
           :root {
             --header-height: 130px;
@@ -507,15 +486,19 @@
           }
           .note-area { width: 100%; flex: none; }
           .note-container { width: 100%; flex: none; }
-          .note-area { width: 100%; flex: none; }
-          .note-container { width: 100%; flex: none; }
-          .note-box { width: 100%; height: 20px; max-height: 50px; }
+          
+          .note-box { 
+            width: 100%; 
+            height: 20px; 
+            max-height: 60px; 
+            overflow-y: auto !important; 
+          }
+          
           .button-container {
             bottom: 10px; right: 10px; left: 10px; justify-content: center; gap: 8px;
           }
         }
         
-        /* 超小屏幕（600px以下） */
         @media (max-width: 600px) {
           :root { --header-height: 160px; }
           .file-search-container { flex-direction: row; gap: 6px; }
@@ -577,7 +560,8 @@
 
     <div class="button-container">
         <button class="import-btn" id="importBtn">導入筆記</button>
-        <button class="export-btn" id="exportBtn" style="display:none;">導出筆記</button>
+        <button class="export-btn" id="exportBtn" style="display:none;">導出 HTML</button>
+        <button class="export-btn csv-btn" id="exportCsvBtn" style="display:none;">匯出 CSV</button>
     </div>
 
     <input type="file" id="importFileInput" accept=".html" style="display:none" />
@@ -594,24 +578,14 @@
         let notesData = {};
         let noteCount = 0;
         let bilingualEnabled = true; 
-        let notesVisible = true; // 筆記顯示狀態
+        let notesVisible = true; 
         
         let file1Data = { name: "", subtitles: [] };
         let file2Data = { name: "", subtitles: [] };
         
-        // ==================== 工具函數 ====================
-        function debounce(func, wait) {
-          let timeout;
-          return function executedFunction(...args) {
-            const later = () => {
-              clearTimeout(timeout);
-              func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-          };
-        }
+        let renderAnimationId = null; // 用於控制分批渲染的 ID
         
+        // ==================== 工具函數 ====================
         function escapeHtml(s) {
           return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
@@ -659,17 +633,24 @@
         
         function updateNoteCount() {
           noteCount = Object.keys(notesData).length;
+          // 根據筆記數量控制 HTML 匯出按鈕
           if (noteCount > 0) {
             document.getElementById('exportBtn').style.display = 'block';
             showGlobalStatus(`已有 ${noteCount} 條筆記`);
           } else {
             document.getElementById('exportBtn').style.display = 'none';
           }
+          
+          // 只要有字幕資料，就允許匯出 CSV (不管有沒有筆記)
+          if (processedSubtitles.length > 0) {
+            document.getElementById('exportCsvBtn').style.display = 'block';
+          } else {
+            document.getElementById('exportCsvBtn').style.display = 'none';
+          }
         }
         
-        // 【核心同步】保證左右框永遠等高
+        // ==================== 核心高度同步 ====================
         function autoResizeTextarea(textarea) {
-          // 如果處於隱藏筆記狀態，不需計算高度
           if (!notesVisible) return;
 
           const subtitleRow = textarea.closest('.subtitle');
@@ -685,19 +666,16 @@
           
           let finalHeight = Math.max(textHeight, noteHeight, 34);
           
-          // 如果是大於 900px 的桌面版，限制 150px
           if (window.innerWidth > 900 && finalHeight >= 150) {
             textarea.style.overflowY = 'auto';
             finalHeight = 150;
           } else if (window.innerWidth <= 900) {
-            // 手機版讓它自然流動，靠 CSS max-height 控制
             textarea.style.overflowY = 'auto';
-            finalHeight = Math.max(textHeight, 34); // 手機版上下分開，以左側文字為準即可
+            finalHeight = Math.max(textHeight, 34);
           } else {
             textarea.style.overflowY = 'hidden';
           }
           
-          // 只有在大於 900px 時才強制兩邊高度相同
           if (window.innerWidth > 900) {
             textarea.style.height = finalHeight + 'px';
             if (textBox) textBox.style.height = finalHeight + 'px';
@@ -717,8 +695,7 @@
         // ==================== 核心：處理與合併輸入數據 ====================
         function processAndDisplayData() {
           notesData = {};
-          updateNoteCount();
-
+          
           if (file1Data.subtitles.length > 0 && file2Data.subtitles.length > 0) {
             showLoading("偵測到雙檔案，正在自動對齊合併...");
             setTimeout(() => {
@@ -749,18 +726,21 @@
               currentFileName = `${file1Data.name} + ${file2Data.name}`;
               processedSubtitles = merged;
               allSubtitles = merged;
-              renderAllSubtitles(merged);
+              updateNoteCount();
+              updateDisplay(); // 改用資料驅動更新畫面
             }, 100);
           } else if (file1Data.subtitles.length > 0) {
             currentFileName = file1Data.name;
             processedSubtitles = processSingleFileSubtitles(file1Data.subtitles);
             allSubtitles = processedSubtitles;
-            renderAllSubtitles(processedSubtitles);
+            updateNoteCount();
+            updateDisplay();
           } else if (file2Data.subtitles.length > 0) {
             currentFileName = file2Data.name;
             processedSubtitles = processSingleFileSubtitles(file2Data.subtitles);
             allSubtitles = processedSubtitles;
-            renderAllSubtitles(processedSubtitles);
+            updateNoteCount();
+            updateDisplay();
           }
         }
 
@@ -1020,6 +1000,7 @@
                 processedSubtitles = [];
                 allSubtitles = [];
                 currentFileName = "";
+                updateNoteCount();
                 showGlobalStatus('已清空所有檔案', 2000);
             } else {
                 processAndDisplayData();
@@ -1088,176 +1069,202 @@
           handleFileChoose(e.target.files[0], file2Data, 2);
         });
         
-        // ==================== UI 渲染與事件 ====================
-        function createSubtitleRowHTML(subtitle, index) {
-          const noteContent = notesData[index] || '';
+        // ==================== 【資料驅動搜尋 與 UI 分批渲染】 ====================
+        
+        // 1. 產生單行 HTML 的函數，現在接收的參數是處理好的資料包 (item)
+        function createSubtitleRowHTML(item) {
+          const { sub, originalIndex, isContext, highlightJp, highlightZh } = item;
+          const noteContent = notesData[originalIndex] || '';
           const hasWrittenClass = noteContent ? 'has-written-note' : '';
           const hasContentClass = noteContent ? 'has-content' : '';
           
-          const escapedJapanese = escapeHtml(subtitle.japanese || '');
-          const escapedChinese = escapeHtml(subtitle.chinese || '');
+          // 如果是前後文，透明度降低
+          const opacityStyle = isContext ? 'style="opacity: 0.5;"' : '';
           
-          let japaneseHTML = `<div class="japanese-text" data-original="${escapeHtml(subtitle.japanese || '')}">${escapedJapanese}</div>`;
-          let chineseHTML = subtitle.chinese ? `<div class="chinese-text" data-original="${escapeHtml(subtitle.chinese || '')}">${escapedChinese}</div>` : '';
+          let japaneseHTML = `<div class="japanese-text">${highlightJp}</div>`;
+          let chineseHTML = sub.chinese ? `<div class="chinese-text">${highlightZh}</div>` : '';
           
-          return `<div class="row" data-index="${index}">
+          return `<div class="row" data-index="${originalIndex}" ${opacityStyle}>
               <div class="subtitle ${hasWrittenClass}">
-                <div class="text-box" data-original="${escapeHtml(subtitle.japanese || '')}">
+                <div class="text-box">
                   ${japaneseHTML} ${chineseHTML}
                 </div>
                 <div class="note-area">
                   <div class="note-container">
-                    <textarea class="note-box ${hasContentClass}" data-index="${index}" placeholder="輸入筆記...">${escapeHtml(noteContent)}</textarea>
+                    <textarea class="note-box ${hasContentClass}" data-index="${originalIndex}" placeholder="輸入筆記...">${escapeHtml(noteContent)}</textarea>
                   </div>
                 </div>
               </div>
             </div>`;
         }
         
-        function renderAllSubtitles(subtitles) {
+        // 2. 更新與計算要顯示的資料 (支援搜尋過濾)
+        function updateDisplay(query = '') {
+            let displayData = [];
+            
+            if (!query) {
+                // 沒有搜尋條件：顯示全部
+                displayData = processedSubtitles.map((sub, i) => ({
+                    sub,
+                    originalIndex: i,
+                    isContext: false,
+                    highlightJp: escapeHtml(sub.japanese || ''),
+                    highlightZh: escapeHtml(sub.chinese || '')
+                }));
+            } else {
+                // 有搜尋條件：在陣列層級快速篩選
+                const regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+                let matchIndices = new Set();
+                let displayIndices = new Set();
+
+                processedSubtitles.forEach((sub, idx) => {
+                    const searchStr = (sub.japanese || '') + ' ' + (sub.chinese || '');
+                    if (searchStr.match(regex)) {
+                        matchIndices.add(idx);
+                        displayIndices.add(idx);
+                        if (idx > 0) displayIndices.add(idx - 1);
+                        if (idx < processedSubtitles.length - 1) displayIndices.add(idx + 1);
+                    }
+                });
+
+                Array.from(displayIndices).sort((a,b) => a - b).forEach(idx => {
+                    const sub = processedSubtitles[idx];
+                    const isMatch = matchIndices.has(idx);
+                    let highlightJp = escapeHtml(sub.japanese || '');
+                    let highlightZh = escapeHtml(sub.chinese || '');
+
+                    // 若為精準命中的句子，加上黃底高亮標籤
+                    if (isMatch) {
+                        highlightJp = highlightJp.replace(regex, '<span class="highlight">$1</span>');
+                        highlightZh = highlightZh.replace(regex, '<span class="highlight">$1</span>');
+                    }
+
+                    displayData.push({
+                        sub,
+                        originalIndex: idx,
+                        isContext: !isMatch,
+                        highlightJp,
+                        highlightZh
+                    });
+                });
+
+                if (matchIndices.size > 0) {
+                    showGlobalStatus(`找到 ${matchIndices.size} 個結果 (已展開前後文)`, 3000);
+                } else {
+                    showGlobalStatus(`未找到匹配內容`, 2000);
+                }
+            }
+            
+            // 將過濾好的資料交給渲染函數
+            renderDisplayData(displayData);
+        }
+        
+        // 3. 負責將資料畫到畫面上的函數 (利用分批繪製保持順暢)
+        function renderDisplayData(displayData) {
           const container = document.getElementById('subtitles');
-          container.innerHTML = subtitles.map((sub, i) => createSubtitleRowHTML(sub, i)).join('');
           
-          container.querySelectorAll('.note-box').forEach(noteBox => {
+          // 如果有正在跑的渲染任務，立刻取消
+          if (renderAnimationId) cancelAnimationFrame(renderAnimationId);
+          container.innerHTML = ''; 
+          
+          const chunkSize = 100;
+          let currentIndex = 0;
+          
+          function renderNextChunk() {
+            const chunk = displayData.slice(currentIndex, currentIndex + chunkSize);
+            if (chunk.length === 0) {
+               updateFileInfo(`已顯示 ${displayData.length} 行結果`, 3000);
+               if (!bilingualEnabled) document.body.classList.add('single-language');
+               return;
+            }
+            
+            const html = chunk.map(item => createSubtitleRowHTML(item)).join('');
+            container.insertAdjacentHTML('beforeend', html);
+            
+            const newlyAdded = container.querySelectorAll('.row:nth-child(n+' + (currentIndex + 1) + ') .note-box.has-content');
+            newlyAdded.forEach(box => autoResizeTextarea(box));
+
+            currentIndex += chunkSize;
+            updateProgress((currentIndex / displayData.length) * 100, `渲染中... ${Math.min(currentIndex, displayData.length)}/${displayData.length}`);
+            
+            renderAnimationId = requestAnimationFrame(renderNextChunk); 
+          }
+          
+          renderNextChunk();
+        }
+        
+        // 綁定搜尋框事件
+        document.getElementById('searchBox').addEventListener('input', function(){
+            const q = this.value.trim();
+            updateDisplay(q);
+        });
+
+        // ==================== 全局事件委派 ====================
+        const subtitlesContainer = document.getElementById('subtitles');
+        let saveTimers = {};
+
+        const saveNote = (noteBox) => {
             const index = parseInt(noteBox.dataset.index);
             const row = noteBox.closest('.row');
             const subtitleDiv = row.querySelector('.subtitle');
-            
-            setTimeout(() => autoResizeTextarea(noteBox), 0);
-            
-            const saveNote = () => {
-              const val = noteBox.value.trim();
-              if (val) {
-                notesData[index] = val;
-                noteBox.classList.add('has-content');
-                subtitleDiv.classList.add('has-written-note');
-              } else {
-                delete notesData[index];
-                noteBox.classList.remove('has-content');
-                subtitleDiv.classList.remove('has-written-note');
-              }
-              updateNoteCount();
-            };
-
-            const debouncedSave = debounce(saveNote, 500);
-            
-            noteBox.addEventListener('input', function() { 
-              autoResizeTextarea(this); 
-              debouncedSave(); 
-            });
-
-            noteBox.addEventListener('blur', saveNote);
-            
-            noteBox.addEventListener('dragover', function(e) {
-              e.preventDefault();
-              this.style.borderColor = '#4CAF50';
-            });
-            noteBox.addEventListener('dragleave', function(e) {
-              this.style.borderColor = '';
-            });
-            noteBox.addEventListener('drop', function(e) {
-              e.preventDefault();
-              this.style.borderColor = '';
-              const text = e.dataTransfer.getData('text/plain');
-              if (text) {
-                const startPos = this.selectionStart;
-                const endPos = this.selectionEnd;
-                const currentValue = this.value;
-                this.value = currentValue.substring(0, startPos) + text + currentValue.substring(endPos);
-                this.dispatchEvent(new Event('input')); 
-                showGlobalStatus('文字已拖曳到筆記框', 1500);
-              }
-            });
-          });
-          
-          if (!bilingualEnabled) document.body.classList.add('single-language');
-          updateFileInfo(`已加載 ${subtitles.length} 行字幕`, 4000);
-        }
-        
-        // ==================== 搜尋與前後文邏輯 ====================
-        document.getElementById('searchBox').addEventListener('input', function(){
-          const q = this.value.trim();
-          const rows = Array.from(document.querySelectorAll('.row'));
-          
-          if (!q) {
-            rows.forEach(row => {
-              const jp = row.querySelector('.japanese-text');
-              const zh = row.querySelector('.chinese-text');
-              if (jp && jp.dataset.original) jp.innerHTML = escapeHtml(jp.dataset.original);
-              if (zh && zh.dataset.original) zh.innerHTML = escapeHtml(zh.dataset.original);
-              row.style.display = '';
-              row.style.opacity = '1'; 
-            });
-            return;
-          }
-          
-          const regex = new RegExp('(' + escapeRegExp(q) + ')', 'gi');
-          let matchIndices = [];
-          
-          rows.forEach((row, idx) => {
-            const jp = row.querySelector('.japanese-text');
-            const zh = row.querySelector('.chinese-text');
-            let found = false;
-            
-            if (jp) {
-              const originalJp = jp.dataset.original || jp.textContent || '';
-              if (originalJp.match(regex)) {
-                jp.innerHTML = escapeHtml(originalJp).replace(regex, '<span class="highlight">$1</span>');
-                found = true;
-              } else {
-                jp.innerHTML = escapeHtml(originalJp);
-              }
-            }
-            
-            if (zh) {
-              const originalZh = zh.dataset.original || zh.textContent || '';
-              if (originalZh.match(regex)) {
-                zh.innerHTML = escapeHtml(originalZh).replace(regex, '<span class="highlight">$1</span>');
-                found = true;
-              } else {
-                zh.innerHTML = escapeHtml(originalZh);
-              }
-            }
-            
-            if (found) {
-              matchIndices.push(idx);
-            }
-          });
-          
-          let visibleIndices = new Set();
-          matchIndices.forEach(idx => {
-            if (idx > 0) visibleIndices.add(idx - 1); 
-            visibleIndices.add(idx);                  
-            if (idx < rows.length - 1) visibleIndices.add(idx + 1); 
-          });
-          
-          rows.forEach((row, idx) => {
-            if (visibleIndices.has(idx)) {
-              row.style.display = '';
-              if (!matchIndices.includes(idx)) {
-                row.style.opacity = '0.5';
-              } else {
-                row.style.opacity = '1';
-              }
+            const val = noteBox.value.trim();
+            if (val) {
+              notesData[index] = val;
+              noteBox.classList.add('has-content');
+              subtitleDiv.classList.add('has-written-note');
             } else {
-              row.style.display = 'none';
-              row.style.opacity = '1';
+              delete notesData[index];
+              noteBox.classList.remove('has-content');
+              subtitleDiv.classList.remove('has-written-note');
             }
-          });
-          
-          if (matchIndices.length > 0) {
-            showGlobalStatus(`找到 ${matchIndices.length} 個結果 (已展開前後文)`, 3000);
-            setTimeout(() => {
-              rows[matchIndices[0]].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-          } else if (q) {
-            showGlobalStatus(`未找到匹配內容`, 2000);
-          }
+            updateNoteCount();
+        };
+
+        subtitlesContainer.addEventListener('input', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                autoResizeTextarea(e.target);
+                
+                const index = e.target.dataset.index;
+                clearTimeout(saveTimers[index]);
+                saveTimers[index] = setTimeout(() => saveNote(e.target), 500);
+            }
+        });
+
+        subtitlesContainer.addEventListener('focusout', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                saveNote(e.target);
+            }
+        });
+
+        subtitlesContainer.addEventListener('dragover', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                e.preventDefault();
+                e.target.style.borderColor = '#4CAF50';
+            }
+        });
+        subtitlesContainer.addEventListener('dragleave', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                e.target.style.borderColor = '';
+            }
+        });
+        subtitlesContainer.addEventListener('drop', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                e.preventDefault();
+                e.target.style.borderColor = '';
+                const text = e.dataTransfer.getData('text/plain');
+                if (text) {
+                    const startPos = e.target.selectionStart;
+                    const endPos = e.target.selectionEnd;
+                    const currentValue = e.target.value;
+                    e.target.value = currentValue.substring(0, startPos) + text + currentValue.substring(endPos);
+                    e.target.dispatchEvent(new Event('input', { bubbles: true })); 
+                    showGlobalStatus('文字已拖曳到筆記框', 1500);
+                }
+            }
         });
 
         // ==================== 匯入/匯出與其他功能 ====================
         
-        // 雙語顯示切換
         document.getElementById('bilingualBtn').addEventListener('click', function() {
           bilingualEnabled = !bilingualEnabled;
           this.textContent = bilingualEnabled ? '單語顯示' : '雙語顯示';
@@ -1266,18 +1273,15 @@
           document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
         });
 
-        // 隱藏筆記功能切換
         document.getElementById('toggleNotesBtn').addEventListener('click', function() {
           notesVisible = !notesVisible;
           this.textContent = notesVisible ? '隱藏筆記' : '顯示筆記';
           document.body.classList.toggle('hide-notes', !notesVisible);
           this.classList.toggle('active', !notesVisible);
           
-          // 若恢復顯示，重算所有框的高度，讓介面不跑版
           if (notesVisible) {
             document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
           } else {
-            // 隱藏時，清除文字框被寫死的高度，讓它自然適應
             document.querySelectorAll('.text-box').forEach(textBox => textBox.style.height = 'auto');
           }
         });
@@ -1331,7 +1335,7 @@
               });
               
               if (importedCount > 0) {
-                renderAllSubtitles(processedSubtitles);
+                updateDisplay(); // 重新渲染畫面套用筆記
                 updateNoteCount();
                 showGlobalStatus(`成功導入 ${importedCount} 條筆記${skippedCount > 0 ? `，${skippedCount} 條未匹配` : ''}`, 4000);
               } else {
@@ -1346,6 +1350,7 @@
           this.value = '';
         });
 
+        // 匯出 HTML 筆記
         document.getElementById('exportBtn').addEventListener('click', () => {
           const notes = Object.entries(notesData).filter(([i, n]) => n.trim());
           const items = notes.map(([idx, note], i) => {
@@ -1366,16 +1371,48 @@
           a.download = `${currentFileName.split('.')[0]}_筆記導出.html`;
           a.click();
         });
+
+        // 匯出 CSV 報表
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+          if(processedSubtitles.length === 0) return alert('沒有資料可以匯出');
+          
+          // 加上 UTF-8 BOM，確保 Excel 開啟不會出現亂碼
+          let csvContent = '\uFEFF'; 
+          csvContent += "序號,時間軸,日文字幕,中文字幕,你的筆記\n";
+
+          const escapeCSV = (str) => {
+             if (str === null || str === undefined) return '""';
+             // 處理字串內的雙引號 (替換為兩個雙引號) 並用雙引號包起整個欄位
+             return `"${String(str).replace(/"/g, '""')}"`;
+          };
+
+          processedSubtitles.forEach((sub, idx) => {
+             const note = notesData[idx] || "";
+             const timecode = (sub.startTime && sub.endTime) ? `${sub.startTime} --> ${sub.endTime}` : "無";
+             
+             csvContent += `${idx + 1},${escapeCSV(timecode)},${escapeCSV(sub.japanese)},${escapeCSV(sub.chinese)},${escapeCSV(note)}\n`;
+          });
+
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `${currentFileName.split('.')[0]}_完整報表.csv`;
+          a.click();
+        });
         
         window.addEventListener('beforeunload', function(e) {
           if (noteCount > 0) { e.preventDefault(); e.returnValue = '有未匯出的筆記，確定離開？'; }
         });
         
-        window.addEventListener('resize', debounce(() => {
-          if (notesVisible) {
-            document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
-          }
-        }, 200));
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+             if (notesVisible) {
+                document.querySelectorAll('.note-box.has-content').forEach(noteBox => autoResizeTextarea(noteBox));
+             }
+          }, 300);
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
           updateFileInfo('請在上面分別放入「檔案1」與「檔案2」，系統將自動合併。', 5000);
