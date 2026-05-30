@@ -175,7 +175,7 @@
           font-size: 13px;
           transition: all 0.2s ease;
         }
-      
+
         .toggle-notes-btn {
           background: #3498db;
           color: white;
@@ -186,7 +186,7 @@
           font-size: 13px;
           transition: all 0.2s ease;
         }
-       
+
         body.hide-notes .note-area {
           display: none !important;
         }
@@ -251,7 +251,6 @@
           overflow: hidden;
           cursor: text;
           user-select: text;
-          -webkit-user-select: text; /* 確保 Safari / iOS 可以正常選取文字 */
         }
         
         .japanese-text {
@@ -489,7 +488,7 @@
           .note-box { 
             width: 100%; 
             height: 20px; 
-            max-height: 60px; 
+            max-height: 80px; 
             overflow-y: auto !important; 
           }
           
@@ -560,7 +559,7 @@
     <div class="button-container">
         <button class="import-btn" id="importBtn">導入筆記</button>
         <button class="export-btn" id="exportBtn" style="display:none;">導出 HTML</button>
-        <button class="export-btn csv-btn" id="exportCsvBtn" style="display:none;">匯出 CSV</button>
+        <button class="export-btn csv-btn" id="exportCsvBtn" style="display:none;">導出 CSV</button>
     </div>
 
     <input type="file" id="importFileInput" accept=".html" style="display:none" />
@@ -582,7 +581,7 @@
         let file1Data = { name: "", subtitles: [] };
         let file2Data = { name: "", subtitles: [] };
         
-        let renderAnimationId = null; 
+        let renderAnimationId = null; // 用於控制分批渲染的 ID
         
         // ==================== 工具函數 ====================
         function escapeHtml(s) {
@@ -632,6 +631,7 @@
         
         function updateNoteCount() {
           noteCount = Object.keys(notesData).length;
+          // 根據筆記數量控制 HTML 匯出按鈕
           if (noteCount > 0) {
             document.getElementById('exportBtn').style.display = 'block';
             showGlobalStatus(`已有 ${noteCount} 條筆記`);
@@ -639,6 +639,7 @@
             document.getElementById('exportBtn').style.display = 'none';
           }
           
+          // 只要有字幕資料，就允許匯出 CSV (不管有沒有筆記)
           if (processedSubtitles.length > 0) {
             document.getElementById('exportCsvBtn').style.display = 'block';
           } else {
@@ -724,7 +725,7 @@
               processedSubtitles = merged;
               allSubtitles = merged;
               updateNoteCount();
-              updateDisplay(); 
+              updateDisplay(); // 改用資料驅動更新畫面
             }, 100);
           } else if (file1Data.subtitles.length > 0) {
             currentFileName = file1Data.name;
@@ -1185,7 +1186,7 @@
             updateDisplay(q);
         });
 
-        // ==================== 全局事件委派 (已移除自訂拖曳腳本，恢復瀏覽器原生支援) ====================
+        // ==================== 全局事件委派 ====================
         const subtitlesContainer = document.getElementById('subtitles');
         let saveTimers = {};
 
@@ -1206,7 +1207,6 @@
             updateNoteCount();
         };
 
-        // 當文字輸入或被「原生拖曳放入」時，都會觸發 input 事件
         subtitlesContainer.addEventListener('input', (e) => {
             if (e.target.classList.contains('note-box')) {
                 autoResizeTextarea(e.target);
@@ -1220,6 +1220,57 @@
         subtitlesContainer.addEventListener('focusout', (e) => {
             if (e.target.classList.contains('note-box')) {
                 saveNote(e.target);
+            }
+        });
+
+        // ==================== 自動換行版：拖曳寫入邏輯 ====================
+        subtitlesContainer.addEventListener('dragover', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                e.preventDefault(); 
+                e.target.style.borderColor = '#4CAF50';
+            }
+        });
+        
+        subtitlesContainer.addEventListener('dragleave', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                e.target.style.borderColor = '';
+            }
+        });
+        
+        subtitlesContainer.addEventListener('drop', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                e.preventDefault(); // 攔截預設行為，啟用我們的「智慧換行」邏輯
+                e.target.style.borderColor = '';
+                
+                // 防呆機制：如果不小心拖了「檔案」進來，攔截它避免網頁跳轉
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    showGlobalStatus('不支援直接拖曳檔案到筆記框喔！', 2000);
+                    return;
+                }
+                
+                const text = e.dataTransfer.getData('text/plain');
+                if (text) {
+                    const startPos = e.target.selectionStart;
+                    const endPos = e.target.selectionEnd;
+                    const currentValue = e.target.value;
+
+                    // 【智慧換行邏輯】
+                    let prefix = '';
+                    // 如果游標不在最開頭，而且游標的前一個字元「不是換行符號」，就自動幫你補一個換行！
+                    if (startPos > 0 && currentValue.charAt(startPos - 1) !== '\n') {
+                        prefix = '\n'; 
+                    }
+
+                    const newText = prefix + text;
+                    e.target.value = currentValue.substring(0, startPos) + newText + currentValue.substring(endPos);
+                    
+                    // 把游標移到剛剛插入的文字最後面，方便繼續編輯
+                    e.target.selectionStart = e.target.selectionEnd = startPos + newText.length;
+                    
+                    // 觸發高度重算與自動存檔
+                    e.target.dispatchEvent(new Event('input', { bubbles: true })); 
+                    showGlobalStatus('文字已拖曳並自動換行', 1500);
+                }
             }
         });
 
@@ -1251,6 +1302,7 @@
           document.getElementById('importFileInput').click();
         });
 
+        // ==================== 強化版匯入功能 (支援時間碼匹配) ====================
         document.getElementById('importFileInput').addEventListener('change', function(e) {
           const file = e.target.files[0];
           if (!file) return;
@@ -1275,7 +1327,7 @@
               exportItems.forEach(item => {
                 const subtitleEl = item.querySelector('.export-note-subtitle');
                 const noteEl = item.querySelector('.export-note-content');
-                const timecodeEl = item.querySelector('.export-timecode'); 
+                const timecodeEl = item.querySelector('.export-timecode'); // 抓取新版時間碼
                 
                 const originalIndex = item.getAttribute('data-original-index'); 
                 const timecodeText = timecodeEl ? timecodeEl.textContent.replace('⏱', '').trim() : '';
@@ -1285,15 +1337,19 @@
                   const noteText = noteEl.textContent.trim();
                   let matchIdx = -1;
 
+                  // 1. 優先使用隱藏行號 (100% 精準)
                   if (originalIndex !== null && !isNaN(parseInt(originalIndex))) {
                     matchIdx = parseInt(originalIndex);
-                  } else if (timecodeText) {
+                  } 
+                  // 2. 其次使用時間碼匹配 (解決重複台詞問題)
+                  else if (timecodeText) {
                     matchIdx = processedSubtitles.findIndex(s => {
                         const sTime = (s.startTime && s.endTime) ? `${s.startTime} --> ${s.endTime}` : '';
                         return sTime === timecodeText;
                     });
                   }
                   
+                  // 3. 還是找不到，使用文字模糊順序推導
                   if (matchIdx === -1 && subText && noteText) {
                     const targetSubText = normalizeText(subText);
                     
@@ -1339,12 +1395,14 @@
           this.value = '';
         });
 
+        // ==================== 強化版 HTML 匯出 (包含時間碼) ====================
         document.getElementById('exportBtn').addEventListener('click', () => {
           const notes = Object.entries(notesData).filter(([i, n]) => n.trim());
           const items = notes.map(([idx, note], i) => {
             const s = processedSubtitles[idx];
             const title = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
             
+            // 加入時間碼顯示
             const timecode = (s.startTime && s.endTime) ? `${s.startTime} --> ${s.endTime}` : '';
             const timecodeHtml = timecode ? `<div class="export-timecode" style="color:#666; font-size:12px; margin-bottom:6px; margin-left:24px;">⏱ ${escapeHtml(timecode)}</div>` : '';
             
@@ -1368,6 +1426,7 @@
           a.click();
         });
 
+        // ==================== CSV 匯出 ====================
         document.getElementById('exportCsvBtn').addEventListener('click', () => {
           if(processedSubtitles.length === 0) return alert('沒有資料可以匯出');
           
