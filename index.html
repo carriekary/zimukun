@@ -667,41 +667,52 @@
             JSZip.loadAsync(file).then(zip => {
                 return zip.file("META-INF/container.xml").async("string").then(containerXml => {
                     const parser = new DOMParser();
-                    const doc = parser.parseFromString(containerXml, "text/xml");
-                    const rootfile = doc.querySelector("rootfile").getAttribute("full-path");
-                    const basePath = rootfile.includes('/') ? rootfile.substring(0, rootfile.lastIndexOf('/') + 1) : '';
+                    const containerDoc = parser.parseFromString(containerXml, "text/xml");
+                    const rootfile = containerDoc.getElementsByTagName("rootfile")[0];
+                    if (!rootfile) throw new Error("無效的 EPUB 格式");
+                    
+                    const opfPath = rootfile.getAttribute("full-path");
+                    const basePath = opfPath.indexOf('/') !== -1 ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
 
-                    return zip.file(rootfile).async("string").then(opfXml => {
+                    return zip.file(opfPath).async("string").then(opfXml => {
                         const opfDoc = parser.parseFromString(opfXml, "text/xml");
+                        const manifestItems = opfDoc.getElementsByTagName("item");
                         const manifest = {};
-                        opfDoc.querySelectorAll("manifest item").forEach(item => {
-                            manifest[item.getAttribute("id")] = item.getAttribute("href");
-                        });
+                        for (let i = 0; i < manifestItems.length; i++) manifest[manifestItems[i].getAttribute("id")] = manifestItems[i].getAttribute("href");
 
+                        const spineItems = opfDoc.getElementsByTagName("itemref");
                         const promises = [];
-                        opfDoc.querySelectorAll("spine itemref").forEach(itemref => {
-                            let href = manifest[itemref.getAttribute("id")].split('#')[0];
-                            const fileInZip = zip.file(basePath + href) || zip.file(decodeURIComponent(basePath + href));
-                            if (fileInZip) {
-                                promises.push(fileInZip.async("string").then(html => {
-                                    const hDoc = parser.parseFromString(html, "text/html");
-                                    hDoc.querySelectorAll('script, style').forEach(s => s.remove());
-                                    return hDoc.body ? hDoc.body.textContent.split('\n') : [];
-                                }));
+                        for (let i = 0; i < spineItems.length; i++) {
+                            const idref = spineItems[i].getAttribute("idref");
+                            let href = manifest[idref];
+                            if (href) {
+                                href = href.split('#')[0];
+                                const fullPath = basePath + href;
+                                const fileInZip = zip.file(fullPath) || zip.file(decodeURIComponent(fullPath));
+                                if (fileInZip) {
+                                    promises.push(fileInZip.async("string").then(html => {
+                                        const doc = parser.parseFromString(html, "text/html");
+                                        doc.querySelectorAll('script, style, svg, img').forEach(s => s.remove());
+                                        const blocks = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'br'];
+                                        blocks.forEach(tag => { doc.querySelectorAll(tag).forEach(el => { el.insertAdjacentText('beforebegin', '\n'); el.insertAdjacentText('afterend', '\n'); }); });
+                                        const text = doc.body ? doc.body.textContent : doc.textContent;
+                                        return text.split('\n').map(t => t.trim()).filter(t => t !== '');
+                                    }));
+                                }
                             }
-                        });
+                        }
                         return Promise.all(promises);
                     });
                 });
             }).then(pages => {
-                const lines = pages.flat().map(t => t.trim()).filter(l => l !== '');
+                const lines = pages.flat().filter(l => l !== '');
                 callback(lines.map(l => ({ text: l })));
             }).catch(err => {
                 console.error(err);
-                alert('EPUB 解析失敗，請確認檔案是否損壞或加密');
+                showError('EPUB 解析失敗，請確認檔案是否損壞或加密');
             });
         }
-
+        
         // ==================== 清除與選擇檔案 ====================
         function clearFile(fileNumber) {
             if (fileNumber === 1) file1Data = { name: "", subtitles: [] };
