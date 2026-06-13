@@ -459,38 +459,156 @@
           return merged;
         }
         
+        
+        // ==================== 核心：處理與合併輸入數據 ====================
         function processAndDisplayData() {
           notesData = {};
+          
           if (file1Data.subtitles.length > 0 && file2Data.subtitles.length > 0) {
-            showLoading("偵測到雙檔案，正在啟動智慧對齊合併...");
+            showLoading("偵測到雙檔案，正在自動對齊合併...");
             setTimeout(() => {
-              let jpSubs = file1Data.subtitles; let zhSubs = file2Data.subtitles;
-              let f1KanaCount = 0; let f2KanaCount = 0;
-              const sample1 = Math.min(20, file1Data.subtitles.length); const sample2 = Math.min(20, file2Data.subtitles.length);
+              let jpSubs = file1Data.subtitles;
+              let zhSubs = file2Data.subtitles;
+              
+              let f1KanaCount = 0;
+              let f2KanaCount = 0;
+              const sample1 = Math.min(20, file1Data.subtitles.length);
+              const sample2 = Math.min(20, file2Data.subtitles.length);
+              
               for(let i=0; i<sample1; i++) { if (isJapaneseText(file1Data.subtitles[i].text)) f1KanaCount++; }
               for(let i=0; i<sample2; i++) { if (isJapaneseText(file2Data.subtitles[i].text)) f2KanaCount++; }
 
               if (f2KanaCount > f1KanaCount) { jpSubs = file2Data.subtitles; zhSubs = file1Data.subtitles; } 
               else { jpSubs = file1Data.subtitles; zhSubs = file2Data.subtitles; }
 
-              processedSubtitles = advancedFuzzyMerge(jpSubs, zhSubs);
+              const merged = mergeSubtitlesArrays(jpSubs, zhSubs);
               currentFileName = `${file1Data.name} + ${file2Data.name}`;
-              updateNoteCount(); updateDisplay(); 
+              processedSubtitles = merged;
+              allSubtitles = merged;
+              updateNoteCount();
+              updateDisplay(); 
             }, 100);
-          } else if (file1Data.subtitles.length > 0 || file2Data.subtitles.length > 0) {
-            const activeData = file1Data.subtitles.length > 0 ? file1Data : file2Data;
-            currentFileName = activeData.name;
-            processedSubtitles = advancedFuzzyMerge(activeData.subtitles, []); 
-            
-            processedSubtitles.forEach(item => {
-               if(!item.chinese && (item.japanese.includes('|') || item.japanese.includes('/'))) {
-                  const parts = item.japanese.split(/[|/]/).map(p => p.trim());
-                  item.japanese = parts[0]; item.chinese = parts[1] || '';
-               }
-            });
-            updateNoteCount(); updateDisplay();
+          } else if (file1Data.subtitles.length > 0) {
+            currentFileName = file1Data.name;
+            processedSubtitles = processSingleFileSubtitles(file1Data.subtitles);
+            allSubtitles = processedSubtitles;
+            updateNoteCount();
+            updateDisplay();
+          } else if (file2Data.subtitles.length > 0) {
+            currentFileName = file2Data.name;
+            processedSubtitles = processSingleFileSubtitles(file2Data.subtitles);
+            allSubtitles = processedSubtitles;
+            updateNoteCount();
+            updateDisplay();
           }
         }
+
+        function processSingleFileSubtitles(subtitles) {
+          const processed = [];
+          const hasTimecode = subtitles.length > 0 && subtitles[0].startTime;
+
+          if (hasTimecode) {
+            const timecodeMap = new Map();
+            subtitles.forEach(sub => {
+              if (!sub.startTime) return;
+              const timeKey = sub.startTime.split(/[,.]/)[0]; 
+              if (!timecodeMap.has(timeKey)) {
+                timecodeMap.set(timeKey, { jpTexts: [], zhTexts: [], rawTexts: [], startTime: sub.startTime, endTime: sub.endTime });
+              }
+              const group = timecodeMap.get(timeKey);
+              const lines = sub.text.split('\n').map(t => t.trim()).filter(t => t);
+              lines.forEach(line => {
+                if (isJapaneseText(line)) group.jpTexts.push(line);
+                else if (isChineseText(line)) group.zhTexts.push(line);
+                else group.rawTexts.push(line);
+              });
+            });
+
+            const sorted = Array.from(timecodeMap.values()).sort((a, b) => a.startTime.localeCompare(b.startTime));
+            sorted.forEach(group => {
+              let jp = group.jpTexts.join('\n');
+              let zh = group.zhTexts.join('\n');
+              
+              if (!jp && !zh) jp = group.rawTexts.join('\n');
+              else if (jp && !zh && group.rawTexts.length) zh = group.rawTexts.join('\n');
+              else if (!jp && zh && group.rawTexts.length) jp = group.rawTexts.join('\n');
+
+              if (jp && !zh && (jp.includes('|') || jp.includes('/') || jp.includes('\\'))) {
+                const parts = jp.split(/[|/\\]/).map(p => p.trim());
+                jp = parts[0]; zh = parts[1] || '';
+              }
+
+              processed.push({ japanese: jp, chinese: zh, originalText: jp + (zh ? ' | ' + zh : ''), isBilingual: !!(jp && zh), startTime: group.startTime, endTime: group.endTime });
+            });
+          } else {
+            let i = 0;
+            while (i < subtitles.length) {
+              const currentText = subtitles[i].text;
+              const nextText = (i + 1 < subtitles.length) ? subtitles[i+1].text : "";
+              
+              if (currentText.includes('|') || currentText.includes('/') || currentText.includes('\\')) {
+                const parts = currentText.split(/[|/\\]/).map(p => p.trim());
+                processed.push({ japanese: parts[0], chinese: parts[1] || '', originalText: currentText, isBilingual: parts.length >= 2, startTime: '', endTime: '' });
+                i++; continue;
+              }
+
+              const isCurrentJP = isJapaneseText(currentText);
+              const isCurrentZH = isChineseText(currentText);
+              const isNextJP = isJapaneseText(nextText);
+              const isNextZH = isChineseText(nextText);
+
+              if (isCurrentJP && isNextZH) {
+                processed.push({ japanese: currentText, chinese: nextText, originalText: currentText + ' | ' + nextText, isBilingual: true, startTime: '', endTime: '' });
+                i += 2;
+              } else if (isCurrentZH && isNextJP) {
+                processed.push({ japanese: nextText, chinese: currentText, originalText: nextText + ' | ' + currentText, isBilingual: true, startTime: '', endTime: '' });
+                i += 2;
+              } else {
+                processed.push({ japanese: isCurrentJP ? currentText : (isCurrentZH ? '' : currentText), chinese: isCurrentZH ? currentText : '', originalText: currentText, isBilingual: false, startTime: '', endTime: '' });
+                i++;
+              }
+            }
+          }
+          return processed;
+        }
+
+        function mergeSubtitlesArrays(japaneseSubtitles, chineseSubtitles) {
+          const merged = [];
+          const hasTimecode = (japaneseSubtitles.length > 0 && japaneseSubtitles[0].startTime) || (chineseSubtitles.length > 0 && chineseSubtitles[0].startTime);
+
+          if (hasTimecode) {
+            const timecodeMap = new Map();
+            japaneseSubtitles.forEach(sub => {
+              if (!sub.startTime) return;
+              const timeKey = sub.startTime.split(/[,.]/)[0]; 
+              if (!timecodeMap.has(timeKey)) timecodeMap.set(timeKey, { jpText: '', zhText: '', startTime: sub.startTime, endTime: sub.endTime });
+              const cur = timecodeMap.get(timeKey).jpText;
+              timecodeMap.get(timeKey).jpText = cur ? cur + '\n' + sub.text : sub.text;
+            });
+
+            chineseSubtitles.forEach(sub => {
+              if (!sub.startTime) return;
+              const timeKey = sub.startTime.split(/[,.]/)[0]; 
+              if (!timecodeMap.has(timeKey)) timecodeMap.set(timeKey, { jpText: '', zhText: '', startTime: sub.startTime, endTime: sub.endTime });
+              const cur = timecodeMap.get(timeKey).zhText;
+              timecodeMap.get(timeKey).zhText = cur ? cur + '\n' + sub.text : sub.text;
+            });
+
+            const sorted = Array.from(timecodeMap.values()).sort((a, b) => a.startTime.localeCompare(b.startTime));
+            sorted.forEach(item => {
+              merged.push({ japanese: item.jpText, chinese: item.zhText, originalText: item.jpText || item.zhText, isBilingual: !!(item.jpText && item.zhText), startTime: item.startTime, endTime: item.endTime });
+            });
+          } else {
+            const maxLength = Math.max(japaneseSubtitles.length, chineseSubtitles.length);
+            for (let i = 0; i < maxLength; i++) {
+              const jp = japaneseSubtitles[i] || { text: '' };
+              const zh = chineseSubtitles[i] || { text: '' };
+              merged.push({ japanese: jp.text || '', chinese: zh.text || '', originalText: jp.text || zh.text || '', isBilingual: !!(jp.text && zh.text), startTime: '', endTime: '' });
+            }
+          }
+          return merged;
+        }
+
 
         // ==================== 檔案解析模組 ====================
         function parseSRT(content) {
