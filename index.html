@@ -867,32 +867,40 @@
         });
         subtitlesContainer.addEventListener('focusout', (e) => { if (e.target.classList.contains('note-box')) saveNote(e.target); });
 
-        // ==================== 🔍 查字典懸浮視窗邏輯 ====================
-        const dictPopup = document.createElement('div');
-        dictPopup.id = 'dictPopup';
-        dictPopup.innerHTML = '🔍 查字典';
-        document.body.appendChild(dictPopup);
-        let selectedWord = "";
-
-        document.addEventListener('mouseup', function(e) {
-          const selection = window.getSelection();
-          const text = selection.toString().trim();
-          
-          if (text.length > 0 && e.target.closest('.text-box')) {
-            selectedWord = text;
-            dictPopup.style.left = `${e.pageX}px`;
-            dictPopup.style.top = `${e.pageY - 35}px`;
-            dictPopup.style.display = 'block';
-          } else if (e.target !== dictPopup) {
-            dictPopup.style.display = 'none';
-          }
+        // ==================== 改進的拖曳寫入邏輯：直接接在最後方並換行 ====================
+        subtitlesContainer.addEventListener('dragover', (e) => { 
+            if (e.target.classList.contains('note-box')) { 
+                e.preventDefault(); 
+                e.target.style.borderColor = '#4CAF50'; 
+            } 
         });
-
-        dictPopup.addEventListener('click', function() {
-          if (!selectedWord) return;
-          const url = `https://jisho.org/search/${encodeURIComponent(selectedWord)}`;
-          window.open(url, 'dictWin', 'width=450,height=600,top=100,left=100,scrollbars=yes');
-          dictPopup.style.display = 'none';
+        
+        subtitlesContainer.addEventListener('dragleave', (e) => { 
+            if (e.target.classList.contains('note-box')) e.target.style.borderColor = ''; 
+        });
+        
+        subtitlesContainer.addEventListener('drop', (e) => {
+            if (e.target.classList.contains('note-box')) {
+                e.preventDefault(); 
+                e.target.style.borderColor = '';
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) return;
+                
+                const text = e.dataTransfer.getData('text/plain');
+                if (text) {
+                    const currentValue = e.target.value;
+                    // 如果原本有內容且結尾不是換行，就自動補上一個換行
+                    let prefix = (currentValue.length > 0 && !currentValue.endsWith('\n')) ? '\n' : ''; 
+                    
+                    // 把文字接在最後方
+                    e.target.value = currentValue + prefix + text;
+                    
+                    // 將游標移到最後面
+                    e.target.selectionStart = e.target.selectionEnd = e.target.value.length;
+                    
+                    // 觸發存檔
+                    e.target.dispatchEvent(new Event('input', { bubbles: true }));  
+                }
+            }
         });
 
         // ==================== 介面按鈕邏輯 ====================
