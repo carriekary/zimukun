@@ -91,25 +91,22 @@
         .subtitle:hover { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12); }
         .subtitle.has-written-note { border-left: 4px solid #ff9800; }
         
-        /* === 將文字框設為相對定位，並預留按鈕空間 === */
         .text-box {
           flex: 1; min-height: 35px; padding: 8px 12px; border-radius: 6px;
           background: #f9f9f9; font-size: 15px; line-height: 1.4; color: #222;
           white-space: pre-wrap; display: flex; flex-direction: column; cursor: text;
           position: relative;
-          padding-right: 40px; /* 預留給右上角語音按鈕的空間 */
+          padding-right: 40px; 
         }
         .japanese-text { font-family: "Hiragino Sans", "Meiryo", sans-serif; font-size: 16px; color: #2c3e50; margin-bottom: 4px; }
         .chinese-text { font-family: "Arial", "Microsoft YaHei", sans-serif; font-size: 15px; color: #666; border-top: 1px dashed #eee; padding-top: 4px; margin-top: 4px; }
         .single-language .chinese-text { display: none; }
         .single-language .japanese-text { margin-bottom: 0; border: none; }
 
-        /* === 工具列按鈕 (放在 text-box 內，僅保留語音) === */
         .row-actions {
           position: absolute; right: 8px; top: 8px; display: flex; gap: 4px;
           opacity: 0; transition: opacity 0.2s ease; z-index: 10;
         }
-        /* 滑鼠移入 text-box 時顯示按鈕 */
         .text-box:hover .row-actions { opacity: 1; }
         .action-btn {
           background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 6px;
@@ -131,7 +128,6 @@
         .file-info { position: fixed; bottom: 20px; right: 20px; background: rgba(255, 255, 255, 0.95); padding: 8px 12px; border-radius: 6px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 100; border: 1px solid #ddd; max-width: 300px; }
         .highlight { background: #ffff00; color: #d32f2f; font-weight: 700; padding: 0 2px; border-radius: 2px; }
         
-        /* === 浮動按鈕區塊 === */
         .button-container { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 1000; align-items: flex-end; }
         .import-btn { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .import-btn:hover { background: #218838; transform: translateY(-2px); }
@@ -154,15 +150,6 @@
         
         .progress-container { position: fixed; top: var(--header-height); left: 0; right: 0; height: 4px; background: #f0f0f0; z-index: 999; display: none; }
         .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
-        
-        /* === 查字典浮動視窗 === */
-        #dictPopup {
-          position: absolute; background: #2c3e50; color: white; padding: 6px 12px;
-          border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer;
-          z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.25); display: none;
-          transition: transform 0.1s;
-        }
-        #dictPopup:hover { transform: scale(1.05); background: #1a252f; }
 
         @media (max-width: 900px) {
           :root { --header-height: 130px; }
@@ -180,7 +167,7 @@
           .note-area { width: 100%; flex: none; }
           .note-container { width: 100%; flex: none; }
           .note-box { width: 100%; height: 20px; max-height: 80px; overflow-y: auto !important; }
-          .row-actions { opacity: 1; } /* 手機版直接顯示按鈕，不依賴 hover */
+          .row-actions { opacity: 1; }
         }
         
         @media (max-width: 600px) {
@@ -247,9 +234,9 @@
         <div class="export-dropdown" id="exportDropdownContainer">
             <button class="main-export-btn" id="mainExportBtn">匯出檔案 ▴</button>
             <div class="dropdown-content" id="exportMenu">
-                <button class="html-btn" id="exportBtn" style="display:none;">📄 HTML (備份檔)</button>
+                <button class="html-btn" id="exportBtn" style="display:none;">📄 HTML (筆記備份)</button>
                 <button class="pdf-notes-btn" id="exportPdfNotesBtn" style="display:none;">📝 PDF (僅筆記)</button>
-                <button class="pdf-btn" id="exportPdfBtn">📕 PDF (全文講義)</button>
+                <button class="pdf-btn" id="exportPdfBtn">📕 PDF (全文)</button>
             </div>
         </div>
     </div>
@@ -258,99 +245,82 @@
 
     <main>
         <div id="subtitles" aria-live="polite"></div>
+        <div id="scrollSentinel" style="height: 20px; width: 100%;"></div>
     </main>
 
     <script>
         // ==================== 核心狀態 ====================
-        let currentFileName = "";
-        let allSubtitles = []; 
-        let processedSubtitles = []; 
-        let notesData = {};
-        let noteCount = 0;
-        let bilingualEnabled = true; 
-        let notesVisible = true; 
+        const AppState = {
+            currentFileName: "",
+            allSubtitles: [],
+            processedSubtitles: [],
+            filteredData: [], 
+            notesData: {},
+            noteCount: 0,
+            bilingualEnabled: true,
+            notesVisible: true,
+            renderedCount: 0, // 無限滾動的計數器
+            currentUtterance: null
+        };
         
         let file1Data = { name: "", subtitles: [] };
         let file2Data = { name: "", subtitles: [] };
-        let renderAnimationId = null; 
-        let currentUtterance = null; // TTS 全局控制
         
         // ==================== 工具函數 ====================
-        function escapeHtml(s) {
-          return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
+        const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const getSafeFileName = () => AppState.currentFileName.replace(/\.[^/.]+$/, "");
         
-        function escapeRegExp(str) {
-          return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => { clearTimeout(timeout); func(...args); };
+                clearTimeout(timeout); timeout = setTimeout(later, wait);
+            };
         }
-        
-        // 保留完整檔名
-        function getSafeFileName() {
-          return currentFileName.replace(/\.[^/.]+$/, "");
-        }
-        
-        function showError(msg) {
+
+        function updateUIStatus(msg, type = 'loading') {
           const c = document.getElementById('subtitles');
-          c.innerHTML = `<div class="loading" style="color:#d32f2f;">${escapeHtml(msg)}</div>`;
-        }
-        
-        function showLoading(msg = '加載中...') {
-          const c = document.getElementById('subtitles');
-          c.innerHTML = `<div class="loading" style="display:block;">${escapeHtml(msg)}</div>`;
+          const color = type === 'error' ? '#d32f2f' : '#333';
+          c.innerHTML = `<div class="loading" style="color:${color}; display:block; padding:20px;">${escapeHtml(msg)}</div>`;
         }
         
         function updateFileInfo(msg, duration = 3000) {
           const fileInfo = document.getElementById('fileInfo');
-          fileInfo.textContent = msg;
-          fileInfo.style.display = 'block';
-          if (duration > 0) setTimeout(() => { fileInfo.style.display = 'none'; }, duration);
+          fileInfo.textContent = msg; fileInfo.style.display = 'block';
+          if (duration > 0) setTimeout(() => fileInfo.style.display = 'none', duration);
         }
         
         function showGlobalStatus(msg, duration = 2000) {
           const status = document.getElementById('globalStatus');
-          status.textContent = msg;
-          status.classList.add('show');
-          setTimeout(() => { status.classList.remove('show'); }, duration);
+          status.textContent = msg; status.classList.add('show');
+          setTimeout(() => status.classList.remove('show'), duration);
         }
         
         function updateProgress(percent, msg = '') {
           const container = document.getElementById('progressContainer');
           const bar = document.getElementById('progressBar');
-          container.style.display = 'block';
-          bar.style.width = percent + '%';
+          container.style.display = 'block'; bar.style.width = percent + '%';
           if (msg) updateFileInfo(msg);
-          if (percent >= 100) setTimeout(() => { container.style.display = 'none'; }, 500);
+          if (percent >= 100) setTimeout(() => container.style.display = 'none', 500);
         }
         
         function updateNoteCount() {
-          noteCount = Object.keys(notesData).length;
-          const exportContainer = document.getElementById('exportDropdownContainer');
-          const htmlBtn = document.getElementById('exportBtn');
-          const pdfNotesBtn = document.getElementById('exportPdfNotesBtn');
-          const pdfBtn = document.getElementById('exportPdfBtn');
+          AppState.noteCount = Object.keys(AppState.notesData).length;
+          const { noteCount, processedSubtitles } = AppState;
           
-          // PDF全文：只要解析出文章就一定顯示
-          if (processedSubtitles.length > 0) {
-            exportContainer.style.display = 'block';
-            pdfBtn.style.display = 'block';
-          } else {
-            exportContainer.style.display = 'none';
-          }
+          document.getElementById('exportDropdownContainer').style.display = processedSubtitles.length > 0 ? 'block' : 'none';
+          document.getElementById('exportPdfBtn').style.display = processedSubtitles.length > 0 ? 'block' : 'none';
 
-          // HTML備份與 PDF 僅筆記：必須要有筆記才顯示
-          if (noteCount > 0) {
-            htmlBtn.style.display = 'block';
-            pdfNotesBtn.style.display = 'block';
-            showGlobalStatus(`目前共有 ${noteCount} 條筆記`);
-          } else {
-            htmlBtn.style.display = 'none';
-            pdfNotesBtn.style.display = 'none';
-          }
+          const hasNotes = noteCount > 0;
+          document.getElementById('exportBtn').style.display = hasNotes ? 'block' : 'none';
+          document.getElementById('exportPdfNotesBtn').style.display = hasNotes ? 'block' : 'none';
+          if (hasNotes) showGlobalStatus(`目前共有 ${noteCount} 條筆記`);
         }
         
-        // ==================== 核心高度同步 ====================
+        // ==================== UI 互動邏輯 ====================
         function autoResizeTextarea(textarea) {
-          if (!notesVisible) return;
+          if (!AppState.notesVisible) return;
           const subtitleRow = textarea.closest('.subtitle');
           if (!subtitleRow) return;
           const textBox = subtitleRow.querySelector('.text-box');
@@ -362,210 +332,110 @@
           const noteHeight = textarea.scrollHeight;
           let finalHeight = Math.max(textHeight, noteHeight, 34);
           
-          if (window.innerWidth > 900 && finalHeight >= 150) {
-            textarea.style.overflowY = 'auto';
-            finalHeight = 150;
-          } else if (window.innerWidth <= 900) {
-            textarea.style.overflowY = 'auto';
-            finalHeight = Math.max(textHeight, 34);
+          const isDesktop = window.innerWidth > 900;
+          if (isDesktop && finalHeight >= 150) {
+            textarea.style.overflowY = 'auto'; finalHeight = 150;
+          } else if (!isDesktop) {
+            textarea.style.overflowY = 'auto'; finalHeight = Math.max(textHeight, 34);
           } else {
             textarea.style.overflowY = 'hidden';
           }
           
-          if (window.innerWidth > 900) {
+          if (isDesktop) {
             textarea.style.height = finalHeight + 'px';
             if (textBox) textBox.style.height = finalHeight + 'px';
           }
         }
         
-        function isJapaneseText(text) {
-          if (!text) return false;
-          return /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
-        }
-        
-        function isChineseText(text) {
-          if (!text) return false;
-          return /[\u4E00-\u9FAF]/.test(text) && !/[\u3040-\u309F\u30A0-\u30FF]/.test(text);
-        }
+        const isJapaneseText = (text) => text && /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
+        const isChineseText = (text) => text && /[\u4E00-\u9FAF]/.test(text) && !isJapaneseText(text);
 
-        // ==================== 🔊 語音朗讀 TTS ====================
         window.speakText = function(btn) {
            const text = btn.getAttribute('data-text');
            if (!text) return;
            if ('speechSynthesis' in window) {
              window.speechSynthesis.cancel(); 
-             currentUtterance = new SpeechSynthesisUtterance(text);
-             
-             // 智慧判斷：只要有日文假名或漢字，就以日文朗讀；否則視為英文，拒絕中文語音
-             if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text)) {
-                 currentUtterance.lang = 'ja-JP'; 
-             } else {
-                 currentUtterance.lang = 'en-US'; 
-             }
-             
-             currentUtterance.rate = 0.9; 
-             window.speechSynthesis.speak(currentUtterance);
+             AppState.currentUtterance = new SpeechSynthesisUtterance(text);
+             AppState.currentUtterance.lang = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text) ? 'ja-JP' : 'en-US';
+             AppState.currentUtterance.rate = 0.9; 
+             window.speechSynthesis.speak(AppState.currentUtterance);
            } else {
              alert('您的瀏覽器不支援語音朗讀功能');
            }
         }
         
-        // ==================== 🧠 智慧模糊對齊演算法 ====================
-        function timecodeToSeconds(timeStr) {
-          if (!timeStr) return 0;
-          const parts = timeStr.replace(',', '.').trim().split(':');
-          if (parts.length < 3) return 0;
-          return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
-        }
-
-        function advancedFuzzyMerge(jpSubs, zhSubs) {
-          const merged = [];
-          const maxTimeThreshold = 3.5; 
-
-          jpSubs.forEach((jp) => {
-            if (!jp.startTime) return; 
-            const jpStart = timecodeToSeconds(jp.startTime);
-            let bestMatchZh = null;
-            let minTimeDiff = Infinity;
-            let matchIndex = -1;
-
-            zhSubs.forEach((zh, idx) => {
-              if(!zh.startTime) return;
-              const zhStart = timecodeToSeconds(zh.startTime);
-              const diff = Math.abs(jpStart - zhStart);
-              if (diff < minTimeDiff && diff <= maxTimeThreshold) {
-                minTimeDiff = diff;
-                bestMatchZh = zh;
-                matchIndex = idx;
-              }
-            });
-
-            if (bestMatchZh) {
-              merged.push({ japanese: jp.text, chinese: bestMatchZh.text, originalText: jp.text + ' | ' + bestMatchZh.text, startTime: jp.startTime, endTime: jp.endTime, isBilingual: true });
-              zhSubs[matchIndex] = {}; 
-            } else {
-              merged.push({ japanese: jp.text, chinese: '', originalText: jp.text, startTime: jp.startTime, endTime: jp.endTime, isBilingual: false });
-            }
-          });
-          
-          if(merged.length === 0 && jpSubs.length > 0) {
-             const maxLength = Math.max(jpSubs.length, zhSubs.length);
-             for (let i = 0; i < maxLength; i++) {
-               const jp = jpSubs[i] || { text: '' };
-               const zh = zhSubs[i] || { text: '' };
-               merged.push({ japanese: jp.text || '', chinese: zh.text || '', originalText: jp.text || zh.text || '', isBilingual: !!(jp.text && zh.text), startTime: '', endTime: '' });
-             }
-          }
-          return merged;
-        }
-        
-        
-        // ==================== 核心：處理與合併輸入數據 ====================
+        // ==================== 數據處理核心 ====================
         function processAndDisplayData() {
-          notesData = {};
+          AppState.notesData = {};
           
           if (file1Data.subtitles.length > 0 && file2Data.subtitles.length > 0) {
-            showLoading("偵測到雙檔案，正在自動對齊合併...");
+            updateUIStatus("偵測到雙檔案，正在自動對齊合併...", 'loading');
             setTimeout(() => {
-              let jpSubs = file1Data.subtitles;
-              let zhSubs = file2Data.subtitles;
+              let jpSubs = file1Data.subtitles; let zhSubs = file2Data.subtitles;
               
-              let f1KanaCount = 0;
-              let f2KanaCount = 0;
-              const sample1 = Math.min(20, file1Data.subtitles.length);
-              const sample2 = Math.min(20, file2Data.subtitles.length);
-              
-              for(let i=0; i<sample1; i++) { if (isJapaneseText(file1Data.subtitles[i].text)) f1KanaCount++; }
-              for(let i=0; i<sample2; i++) { if (isJapaneseText(file2Data.subtitles[i].text)) f2KanaCount++; }
+              let f1KanaCount = 0; let f2KanaCount = 0;
+              for(let i=0; i<Math.min(20, file1Data.subtitles.length); i++) if (isJapaneseText(file1Data.subtitles[i].text)) f1KanaCount++;
+              for(let i=0; i<Math.min(20, file2Data.subtitles.length); i++) if (isJapaneseText(file2Data.subtitles[i].text)) f2KanaCount++;
 
               if (f2KanaCount > f1KanaCount) { jpSubs = file2Data.subtitles; zhSubs = file1Data.subtitles; } 
-              else { jpSubs = file1Data.subtitles; zhSubs = file2Data.subtitles; }
-
-              const merged = mergeSubtitlesArrays(jpSubs, zhSubs);
-              currentFileName = `${file1Data.name} + ${file2Data.name}`;
-              processedSubtitles = merged;
-              allSubtitles = merged;
-              updateNoteCount();
-              updateDisplay(); 
+              
+              AppState.currentFileName = `${file1Data.name} + ${file2Data.name}`;
+              AppState.processedSubtitles = mergeSubtitlesArrays(jpSubs, zhSubs);
+              updateNoteCount(); updateDisplay(); 
             }, 100);
-          } else if (file1Data.subtitles.length > 0) {
-            currentFileName = file1Data.name;
-            processedSubtitles = processSingleFileSubtitles(file1Data.subtitles);
-            allSubtitles = processedSubtitles;
-            updateNoteCount();
-            updateDisplay();
-          } else if (file2Data.subtitles.length > 0) {
-            currentFileName = file2Data.name;
-            processedSubtitles = processSingleFileSubtitles(file2Data.subtitles);
-            allSubtitles = processedSubtitles;
-            updateNoteCount();
-            updateDisplay();
+          } else {
+            const activeFile = file1Data.subtitles.length > 0 ? file1Data : file2Data;
+            AppState.currentFileName = activeFile.name;
+            AppState.processedSubtitles = processSingleFileSubtitles(activeFile.subtitles);
+            updateNoteCount(); updateDisplay();
           }
         }
 
         function processSingleFileSubtitles(subtitles) {
           const processed = [];
-          const hasTimecode = subtitles.length > 0 && subtitles[0].startTime;
-
-          if (hasTimecode) {
+          if (subtitles.length > 0 && subtitles[0].startTime) {
             const timecodeMap = new Map();
             subtitles.forEach(sub => {
               if (!sub.startTime) return;
               const timeKey = sub.startTime.split(/[,.]/)[0]; 
-              if (!timecodeMap.has(timeKey)) {
-                timecodeMap.set(timeKey, { jpTexts: [], zhTexts: [], rawTexts: [], startTime: sub.startTime, endTime: sub.endTime });
-              }
+              if (!timecodeMap.has(timeKey)) timecodeMap.set(timeKey, { jpTexts: [], zhTexts: [], rawTexts: [], startTime: sub.startTime, endTime: sub.endTime });
               const group = timecodeMap.get(timeKey);
-              const lines = sub.text.split('\n').map(t => t.trim()).filter(t => t);
-              lines.forEach(line => {
+              sub.text.split('\n').map(t => t.trim()).filter(Boolean).forEach(line => {
                 if (isJapaneseText(line)) group.jpTexts.push(line);
                 else if (isChineseText(line)) group.zhTexts.push(line);
                 else group.rawTexts.push(line);
               });
             });
 
-            const sorted = Array.from(timecodeMap.values()).sort((a, b) => a.startTime.localeCompare(b.startTime));
-            sorted.forEach(group => {
-              let jp = group.jpTexts.join('\n');
-              let zh = group.zhTexts.join('\n');
-              
+            Array.from(timecodeMap.values()).sort((a, b) => a.startTime.localeCompare(b.startTime)).forEach(group => {
+              let jp = group.jpTexts.join('\n'); let zh = group.zhTexts.join('\n');
               if (!jp && !zh) jp = group.rawTexts.join('\n');
               else if (jp && !zh && group.rawTexts.length) zh = group.rawTexts.join('\n');
               else if (!jp && zh && group.rawTexts.length) jp = group.rawTexts.join('\n');
 
-              if (jp && !zh && (jp.includes('|') || jp.includes('/') || jp.includes('\\'))) {
+              if (jp && !zh && /[|/\\]/.test(jp)) {
                 const parts = jp.split(/[|/\\]/).map(p => p.trim());
                 jp = parts[0]; zh = parts[1] || '';
               }
-
               processed.push({ japanese: jp, chinese: zh, originalText: jp + (zh ? ' | ' + zh : ''), isBilingual: !!(jp && zh), startTime: group.startTime, endTime: group.endTime });
             });
           } else {
-            let i = 0;
-            while (i < subtitles.length) {
+            for (let i = 0; i < subtitles.length; i++) {
               const currentText = subtitles[i].text;
               const nextText = (i + 1 < subtitles.length) ? subtitles[i+1].text : "";
               
-              if (currentText.includes('|') || currentText.includes('/') || currentText.includes('\\')) {
+              if (/[|/\\]/.test(currentText)) {
                 const parts = currentText.split(/[|/\\]/).map(p => p.trim());
                 processed.push({ japanese: parts[0], chinese: parts[1] || '', originalText: currentText, isBilingual: parts.length >= 2, startTime: '', endTime: '' });
-                i++; continue;
+                continue;
               }
 
-              const isCurrentJP = isJapaneseText(currentText);
-              const isCurrentZH = isChineseText(currentText);
-              const isNextJP = isJapaneseText(nextText);
-              const isNextZH = isChineseText(nextText);
-
-              if (isCurrentJP && isNextZH) {
-                processed.push({ japanese: currentText, chinese: nextText, originalText: currentText + ' | ' + nextText, isBilingual: true, startTime: '', endTime: '' });
-                i += 2;
-              } else if (isCurrentZH && isNextJP) {
-                processed.push({ japanese: nextText, chinese: currentText, originalText: nextText + ' | ' + currentText, isBilingual: true, startTime: '', endTime: '' });
-                i += 2;
+              if (isJapaneseText(currentText) && isChineseText(nextText)) {
+                processed.push({ japanese: currentText, chinese: nextText, originalText: currentText + ' | ' + nextText, isBilingual: true, startTime: '', endTime: '' }); i++;
+              } else if (isChineseText(currentText) && isJapaneseText(nextText)) {
+                processed.push({ japanese: nextText, chinese: currentText, originalText: nextText + ' | ' + currentText, isBilingual: true, startTime: '', endTime: '' }); i++;
               } else {
-                processed.push({ japanese: isCurrentJP ? currentText : (isCurrentZH ? '' : currentText), chinese: isCurrentZH ? currentText : '', originalText: currentText, isBilingual: false, startTime: '', endTime: '' });
-                i++;
+                processed.push({ japanese: isJapaneseText(currentText) ? currentText : (isChineseText(currentText) ? '' : currentText), chinese: isChineseText(currentText) ? currentText : '', originalText: currentText, isBilingual: false, startTime: '', endTime: '' });
               }
             }
           }
@@ -574,524 +444,344 @@
 
         function mergeSubtitlesArrays(japaneseSubtitles, chineseSubtitles) {
           const merged = [];
-          const hasTimecode = (japaneseSubtitles.length > 0 && japaneseSubtitles[0].startTime) || (chineseSubtitles.length > 0 && chineseSubtitles[0].startTime);
-
-          if (hasTimecode) {
+          if ((japaneseSubtitles.length > 0 && japaneseSubtitles[0].startTime) || (chineseSubtitles.length > 0 && chineseSubtitles[0].startTime)) {
             const timecodeMap = new Map();
-            japaneseSubtitles.forEach(sub => {
-              if (!sub.startTime) return;
-              const timeKey = sub.startTime.split(/[,.]/)[0]; 
-              if (!timecodeMap.has(timeKey)) timecodeMap.set(timeKey, { jpText: '', zhText: '', startTime: sub.startTime, endTime: sub.endTime });
-              const cur = timecodeMap.get(timeKey).jpText;
-              timecodeMap.get(timeKey).jpText = cur ? cur + '\n' + sub.text : sub.text;
-            });
+            const processMap = (subs, type) => {
+                subs.forEach(sub => {
+                    if (!sub.startTime) return;
+                    const timeKey = sub.startTime.split(/[,.]/)[0];
+                    if (!timecodeMap.has(timeKey)) timecodeMap.set(timeKey, { jpText: '', zhText: '', startTime: sub.startTime, endTime: sub.endTime });
+                    timecodeMap.get(timeKey)[type] += (timecodeMap.get(timeKey)[type] ? '\n' : '') + sub.text;
+                });
+            };
+            processMap(japaneseSubtitles, 'jpText'); processMap(chineseSubtitles, 'zhText');
 
-            chineseSubtitles.forEach(sub => {
-              if (!sub.startTime) return;
-              const timeKey = sub.startTime.split(/[,.]/)[0]; 
-              if (!timecodeMap.has(timeKey)) timecodeMap.set(timeKey, { jpText: '', zhText: '', startTime: sub.startTime, endTime: sub.endTime });
-              const cur = timecodeMap.get(timeKey).zhText;
-              timecodeMap.get(timeKey).zhText = cur ? cur + '\n' + sub.text : sub.text;
-            });
-
-            const sorted = Array.from(timecodeMap.values()).sort((a, b) => a.startTime.localeCompare(b.startTime));
-            sorted.forEach(item => {
+            Array.from(timecodeMap.values()).sort((a, b) => a.startTime.localeCompare(b.startTime)).forEach(item => {
               merged.push({ japanese: item.jpText, chinese: item.zhText, originalText: item.jpText || item.zhText, isBilingual: !!(item.jpText && item.zhText), startTime: item.startTime, endTime: item.endTime });
             });
           } else {
             const maxLength = Math.max(japaneseSubtitles.length, chineseSubtitles.length);
             for (let i = 0; i < maxLength; i++) {
-              const jp = japaneseSubtitles[i] || { text: '' };
-              const zh = chineseSubtitles[i] || { text: '' };
+              const jp = japaneseSubtitles[i] || { text: '' }; const zh = chineseSubtitles[i] || { text: '' };
               merged.push({ japanese: jp.text || '', chinese: zh.text || '', originalText: jp.text || zh.text || '', isBilingual: !!(jp.text && zh.text), startTime: '', endTime: '' });
             }
           }
           return merged;
         }
 
-
-        // ==================== 檔案解析模組 ====================
-        function parseSRT(content) {
-          if (!content) return [];
-          return content.replace(/\r/g, '').split(/\n\n+/).map(block => {
-            const lines = block.split('\n').filter(l => l.trim() !== '');
+        // ==================== 檔案解析 ====================
+        const parseSRT = (content) => content ? content.replace(/\r/g, '').split(/\n\n+/).map(block => {
+            const lines = block.split('\n').filter(Boolean);
             if (lines.length >= 3) {
               const match = lines[1].match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
               return { startTime: match ? match[1] : '', endTime: match ? match[2] : '', text: lines.slice(2).join('\n') };
-            }
-            return null;
-          }).filter(Boolean);
-        }
-        function parseASS(content) {
-          if (!content) return [];
-          return content.replace(/\r/g, '').split('\n').filter(l => l.trim().startsWith('Dialogue:')).map(line => {
-              const parts = line.split(',');
-              if (parts.length >= 10) return { startTime: parts[1], endTime: parts[2], text: parts.slice(9).join(',').replace(/\\N/g, '\n').replace(/\{.*?\}/g, '').trim() };
-              return null;
-            }).filter(item => item && item.text);
-        }
-        function parseTXT(content) {
-          return content ? content.split('\n').map(l => l.trim()).filter(l => l !== '').map(l => ({ text: l })) : [];
-        }
+            } return null;
+          }).filter(Boolean) : [];
+          
+        const parseASS = (content) => content ? content.replace(/\r/g, '').split('\n').filter(l => l.trim().startsWith('Dialogue:')).map(line => {
+            const parts = line.split(',');
+            return parts.length >= 10 ? { startTime: parts[1], endTime: parts[2], text: parts.slice(9).join(',').replace(/\\N/g, '\n').replace(/\{.*?\}/g, '').trim() } : null;
+          }).filter(item => item && item.text) : [];
+          
+        const parseTXT = (content) => content ? content.split('\n').map(l => l.trim()).filter(Boolean).map(text => ({ text })) : [];
+        
         function parseDOCX(arrayBuffer, callback) {
           mammoth.convertToHtml({ arrayBuffer }).then(result => {
             const temp = document.createElement('div'); temp.innerHTML = result.value || '';
-            const ps = Array.from(temp.querySelectorAll('p')).map(p => p.textContent.trim()).filter(t => t !== '');
-            callback(ps.map(t => ({ text: t })));
-          }).catch(err => { alert('DOCX 解析失敗'); });
+            callback(Array.from(temp.querySelectorAll('p')).map(p => p.textContent.trim()).filter(Boolean).map(text => ({ text })));
+          }).catch(() => alert('DOCX 解析失敗'));
         }
+        
         function parsePDF(arrayBuffer, callback) {
           pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
           pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(pdf => {
-            const promises = [];
-            for (let i = 1; i <= pdf.numPages; i++) {
-              promises.push(pdf.getPage(i).then(page => page.getTextContent().then(content => {
+            Promise.all(Array.from({length: pdf.numPages}, (_, i) => pdf.getPage(i + 1).then(page => page.getTextContent().then(content => {
                 let lines = [], current = [], lastY = null;
                 content.items.forEach(item => {
-                  const y = (item.transform && item.transform[5] != null) ? item.transform[5] : null;
+                  const y = item.transform?.[5];
                   if (lastY === null || y === null || Math.abs(y - lastY) < 5) current.push(item.str);
                   else { if (current.length) lines.push(current.join(' ')); current = [item.str]; }
                   lastY = y;
                 });
                 if (current.length) lines.push(current.join(' '));
                 return lines;
-              })));
-            }
-            Promise.all(promises).then(pages => {
-              const lines = pages.flat().map(l => l.trim()).filter(l => l !== '');
-              callback(lines.map(l => ({ text: l })));
-            });
+            })))).then(pages => callback(pages.flat().map(l => l.trim()).filter(Boolean).map(text => ({ text }))));
           });
         }
+        
         function parseEPUB(file, callback) {
-            JSZip.loadAsync(file).then(zip => {
-                return zip.file("META-INF/container.xml").async("string").then(containerXml => {
-                    const parser = new DOMParser();
-                    const containerDoc = parser.parseFromString(containerXml, "text/xml");
-                    const rootfile = containerDoc.getElementsByTagName("rootfile")[0];
-                    if (!rootfile) throw new Error("無效的 EPUB 格式");
+            JSZip.loadAsync(file).then(zip => zip.file("META-INF/container.xml").async("string").then(containerXml => {
+                const doc = new DOMParser().parseFromString(containerXml, "text/xml");
+                const opfPath = doc.getElementsByTagName("rootfile")[0]?.getAttribute("full-path");
+                if (!opfPath) throw new Error("無效 EPUB");
+                const basePath = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+
+                return zip.file(opfPath).async("string").then(opfXml => {
+                    const opf = new DOMParser().parseFromString(opfXml, "text/xml");
+                    const manifest = Array.from(opf.getElementsByTagName("item")).reduce((acc, el) => { acc[el.getAttribute("id")] = el.getAttribute("href"); return acc; }, {});
                     
-                    const opfPath = rootfile.getAttribute("full-path");
-                    const basePath = opfPath.indexOf('/') !== -1 ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
-
-                    return zip.file(opfPath).async("string").then(opfXml => {
-                        const opfDoc = parser.parseFromString(opfXml, "text/xml");
-                        const manifestItems = opfDoc.getElementsByTagName("item");
-                        const manifest = {};
-                        for (let i = 0; i < manifestItems.length; i++) manifest[manifestItems[i].getAttribute("id")] = manifestItems[i].getAttribute("href");
-
-                        const spineItems = opfDoc.getElementsByTagName("itemref");
-                        const promises = [];
-                        for (let i = 0; i < spineItems.length; i++) {
-                            const idref = spineItems[i].getAttribute("idref");
-                            let href = manifest[idref];
-                            if (href) {
-                                href = href.split('#')[0];
-                                const fullPath = basePath + href;
-                                const fileInZip = zip.file(fullPath) || zip.file(decodeURIComponent(fullPath));
-                                if (fileInZip) {
-                                    promises.push(fileInZip.async("string").then(html => {
-                                        const doc = parser.parseFromString(html, "text/html");
-                                        doc.querySelectorAll('script, style, svg, img').forEach(s => s.remove());
-                                        const blocks = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'br'];
-                                        blocks.forEach(tag => { doc.querySelectorAll(tag).forEach(el => { el.insertAdjacentText('beforebegin', '\n'); el.insertAdjacentText('afterend', '\n'); }); });
-                                        const text = doc.body ? doc.body.textContent : doc.textContent;
-                                        return text.split('\n').map(t => t.trim()).filter(t => t !== '');
-                                    }));
-                                }
-                            }
-                        }
-                        return Promise.all(promises);
-                    });
+                    return Promise.all(Array.from(opf.getElementsByTagName("itemref")).map(el => {
+                        const href = manifest[el.getAttribute("idref")]?.split('#')[0];
+                        const fileInZip = href && (zip.file(basePath + href) || zip.file(decodeURIComponent(basePath + href)));
+                        return fileInZip ? fileInZip.async("string").then(html => {
+                            const d = new DOMParser().parseFromString(html, "text/html");
+                            d.querySelectorAll('script, style, svg, img').forEach(s => s.remove());
+                            ['p', 'div', 'h1', 'h2', 'li', 'br'].forEach(tag => d.querySelectorAll(tag).forEach(e => { e.insertAdjacentText('beforebegin', '\n'); e.insertAdjacentText('afterend', '\n'); }));
+                            return (d.body || d).textContent.split('\n').map(t => t.trim()).filter(Boolean);
+                        }) : [];
+                    }));
                 });
-            }).then(pages => {
-                const lines = pages.flat().filter(l => l !== '');
-                callback(lines.map(l => ({ text: l })));
-            }).catch(err => {
-                console.error(err);
-                showError('EPUB 解析失敗，請確認檔案是否損壞或加密');
-            });
+            })).then(pages => callback(pages.flat().map(text => ({ text }))))
+            .catch(err => updateUIStatus('EPUB 解析失敗，請確認檔案', 'error'));
         }
         
-        // ==================== 清除與選擇檔案 ====================
-        function clearFile(fileNumber) {
-            if (fileNumber === 1) file1Data = { name: "", subtitles: [] };
-            if (fileNumber === 2) file2Data = { name: "", subtitles: [] };
-            document.getElementById(`fileInput${fileNumber}`).value = '';
-            document.getElementById(`textFile${fileNumber}`).textContent = `選擇檔案 ${fileNumber}`;
-            document.getElementById(`labelFile${fileNumber}`).classList.remove('has-file');
-            document.getElementById(`clearBtn${fileNumber}`).style.display = 'none';
+        // ==================== 檔案操作 ====================
+        function clearFile(num) {
+            if (num === 1) file1Data = { name: "", subtitles: [] };
+            if (num === 2) file2Data = { name: "", subtitles: [] };
+            document.getElementById(`fileInput${num}`).value = '';
+            document.getElementById(`textFile${num}`).textContent = `選擇檔案 ${num}`;
+            document.getElementById(`labelFile${num}`).classList.remove('has-file');
+            document.getElementById(`clearBtn${num}`).style.display = 'none';
 
-            if (file1Data.subtitles.length === 0 && file2Data.subtitles.length === 0) {
-                document.getElementById('subtitles').innerHTML = '';
-                processedSubtitles = []; notesData = {};
+            if (!file1Data.subtitles.length && !file2Data.subtitles.length) {
+                document.getElementById('subtitles').innerHTML = ''; AppState.processedSubtitles = []; AppState.notesData = {};
                 updateNoteCount(); showGlobalStatus('已清空所有檔案');
-            } else {
-                processAndDisplayData(); showGlobalStatus(`已恢復單一檔案顯示`);
-            }
+            } else { processAndDisplayData(); showGlobalStatus(`已恢復單一檔案顯示`); }
         }
+        
         document.getElementById('clearBtn1').addEventListener('click', () => clearFile(1));
         document.getElementById('clearBtn2').addEventListener('click', () => clearFile(2));
 
-        function handleFileChoose(file, targetDataStore, fileNumber) {
-          const labelId = 'labelFile' + fileNumber; const textId = 'textFile' + fileNumber;
-          if (!file) return clearFile(fileNumber);
-          document.getElementById(textId).textContent = file.name;
-          document.getElementById(labelId).classList.add('has-file');
-          document.getElementById('clearBtn' + fileNumber).style.display = 'block';
+        function handleFileChoose(file, targetData, num) {
+          if (!file) return clearFile(num);
+          document.getElementById('textFile' + num).textContent = file.name;
+          document.getElementById('labelFile' + num).classList.add('has-file');
+          document.getElementById('clearBtn' + num).style.display = 'block';
 
-          const ext = (file.name.split('.').pop() || '').toLowerCase();
-          showLoading(`正在解析 ${file.name}...`);
-          targetDataStore.name = file.name;
+          const ext = file.name.split('.').pop().toLowerCase();
+          updateUIStatus(`正在解析 ${file.name}...`);
+          targetData.name = file.name;
           
-          if (ext === 'epub') {
-             parseEPUB(file, subs => { targetDataStore.subtitles = subs; processAndDisplayData(); });
-             return;
-          }
+          if (ext === 'epub') return parseEPUB(file, subs => { targetData.subtitles = subs; processAndDisplayData(); });
           
           const reader = new FileReader();
-          reader.onload = (ev) => {
-            if (ext === 'srt') { targetDataStore.subtitles = parseSRT(ev.target.result); processAndDisplayData(); } 
-            else if (ext === 'ass') { targetDataStore.subtitles = parseASS(ev.target.result); processAndDisplayData(); } 
-            else if (ext === 'txt') { targetDataStore.subtitles = parseTXT(ev.target.result); processAndDisplayData(); } 
-            else if (ext === 'docx') { parseDOCX(ev.target.result, subs => { targetDataStore.subtitles = subs; processAndDisplayData(); }); } 
-            else if (ext === 'pdf') { parsePDF(ev.target.result, subs => { targetDataStore.subtitles = subs; processAndDisplayData(); }); } 
-            else { alert('不支援的檔案格式。'); clearFile(fileNumber); }
+          reader.onload = (e) => {
+            const res = e.target.result;
+            if (ext === 'srt') targetData.subtitles = parseSRT(res);
+            else if (ext === 'ass') targetData.subtitles = parseASS(res);
+            else if (ext === 'txt') targetData.subtitles = parseTXT(res);
+            else if (ext === 'docx') return parseDOCX(res, subs => { targetData.subtitles = subs; processAndDisplayData(); });
+            else if (ext === 'pdf') return parsePDF(res, subs => { targetData.subtitles = subs; processAndDisplayData(); });
+            else return alert('不支援的格式') || clearFile(num);
+            processAndDisplayData();
           };
-          
-          if (ext === 'docx' || ext === 'pdf') {
-             reader.readAsArrayBuffer(file);
-          } else {
-             reader.readAsText(file, 'utf-8');
-          }
+          ['docx', 'pdf'].includes(ext) ? reader.readAsArrayBuffer(file) : reader.readAsText(file, 'utf-8');
         }
 
-        document.getElementById('fileInput1').addEventListener('change', function(e) { handleFileChoose(e.target.files[0], file1Data, 1); });
-        document.getElementById('fileInput2').addEventListener('change', function(e) { handleFileChoose(e.target.files[0], file2Data, 2); });
+        document.getElementById('fileInput1').addEventListener('change', e => handleFileChoose(e.target.files[0], file1Data, 1));
+        document.getElementById('fileInput2').addEventListener('change', e => handleFileChoose(e.target.files[0], file2Data, 2));
         
-        // ==================== 渲染與畫面 ====================
+        // ==================== 渲染與無限滾動 ====================
         function createSubtitleRowHTML(item) {
           const { sub, originalIndex, isContext, highlightJp, highlightZh } = item;
-          const noteContent = notesData[originalIndex] || '';
-          const hasWrittenClass = noteContent ? 'has-written-note' : '';
-          const hasContentClass = noteContent ? 'has-content' : '';
-          const opacityStyle = isContext ? 'style="opacity: 0.5;"' : '';
+          const noteContent = AppState.notesData[originalIndex] || '';
+          const classes = noteContent ? 'has-written-note' : '';
+          const noteClasses = noteContent ? 'has-content' : '';
           
-          return `<div class="row" data-index="${originalIndex}" ${opacityStyle}>
-              <div class="subtitle ${hasWrittenClass}">
+          return `<div class="row" data-index="${originalIndex}" ${isContext ? 'style="opacity: 0.5;"' : ''}>
+              <div class="subtitle ${classes}">
                 <div class="text-box">
                   <div class="japanese-text">${highlightJp}</div>
                   ${sub.chinese ? `<div class="chinese-text">${highlightZh}</div>` : ''}
-                  
-                  <div class="row-actions">
-                     <button class="action-btn" title="朗讀" data-text="${escapeHtml(sub.japanese || sub.originalText)}" onclick="speakText(this)">🔊</button>
-                  </div>
+                  <div class="row-actions"><button class="action-btn" data-text="${escapeHtml(sub.japanese || sub.originalText)}" onclick="speakText(this)">🔊</button></div>
                 </div>
-                <div class="note-area">
-                  <div class="note-container">
-                    <textarea class="note-box ${hasContentClass}" data-index="${originalIndex}" placeholder="輸入筆記...">${escapeHtml(noteContent)}</textarea>
-                  </div>
-                </div>
+                <div class="note-area"><div class="note-container"><textarea class="note-box ${noteClasses}" data-index="${originalIndex}" placeholder="輸入筆記...">${escapeHtml(noteContent)}</textarea></div></div>
               </div>
             </div>`;
         }
         
         function updateDisplay(query = '') {
-            let displayData = [];
-            if (!query) {
-                displayData = processedSubtitles.map((sub, i) => ({ sub, originalIndex: i, isContext: false, highlightJp: escapeHtml(sub.japanese || ''), highlightZh: escapeHtml(sub.chinese || '') }));
-            } else {
-                const regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
-                let matchIndices = new Set(); let displayIndices = new Set();
-                processedSubtitles.forEach((sub, idx) => {
-                    const searchStr = (sub.japanese || '') + ' ' + (sub.chinese || '');
-                    if (searchStr.match(regex)) {
-                        matchIndices.add(idx); displayIndices.add(idx);
-                        if (idx > 0) displayIndices.add(idx - 1);
-                        if (idx < processedSubtitles.length - 1) displayIndices.add(idx + 1);
-                    }
-                });
-                Array.from(displayIndices).sort((a,b) => a - b).forEach(idx => {
-                    const sub = processedSubtitles[idx]; const isMatch = matchIndices.has(idx);
-                    let highlightJp = escapeHtml(sub.japanese || ''); let highlightZh = escapeHtml(sub.chinese || '');
-                    if (isMatch) { highlightJp = highlightJp.replace(regex, '<span class="highlight">$1</span>'); highlightZh = highlightZh.replace(regex, '<span class="highlight">$1</span>'); }
-                    displayData.push({ sub, originalIndex: idx, isContext: !isMatch, highlightJp, highlightZh });
-                });
+            if (query !== undefined) {
+                let displayData = [];
+                if (!query) {
+                    displayData = AppState.processedSubtitles.map((sub, i) => ({ sub, originalIndex: i, isContext: false, highlightJp: escapeHtml(sub.japanese || ''), highlightZh: escapeHtml(sub.chinese || '') }));
+                } else {
+                    const regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+                    let indices = new Set();
+                    AppState.processedSubtitles.forEach((sub, idx) => {
+                        if (((sub.japanese || '') + ' ' + (sub.chinese || '')).match(regex)) {
+                            indices.add(idx); if (idx > 0) indices.add(idx - 1); if (idx < AppState.processedSubtitles.length - 1) indices.add(idx + 1);
+                        }
+                    });
+                    Array.from(indices).sort((a,b) => a - b).forEach(idx => {
+                        const sub = AppState.processedSubtitles[idx];
+                        const isMatch = ((sub.japanese || '') + ' ' + (sub.chinese || '')).match(regex);
+                        let highlightJp = escapeHtml(sub.japanese || ''); let highlightZh = escapeHtml(sub.chinese || '');
+                        if (isMatch) { highlightJp = highlightJp.replace(regex, '<span class="highlight">$1</span>'); highlightZh = highlightZh.replace(regex, '<span class="highlight">$1</span>'); }
+                        displayData.push({ sub, originalIndex: idx, isContext: !isMatch, highlightJp, highlightZh });
+                    });
+                }
+                AppState.filteredData = displayData;
             }
-            renderDisplayData(displayData);
+
+            // 重置渲染狀態
+            AppState.renderedCount = 0;
+            const container = document.getElementById('subtitles');
+            container.innerHTML = ''; 
+
+            // 渲染第一批資料
+            renderNextBatch();
+            
+            document.body.classList.toggle('single-language', !AppState.bilingualEnabled);
+            if (query !== undefined) window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        
-        function renderDisplayData(displayData) {
-          const container = document.getElementById('subtitles');
-          if (renderAnimationId) cancelAnimationFrame(renderAnimationId);
-          container.innerHTML = ''; 
-          
-          let currentIndex = 0; const chunkSize = 100;
-          function renderNextChunk() {
-            const chunk = displayData.slice(currentIndex, currentIndex + chunkSize);
-            if (chunk.length === 0) {
-               if (!bilingualEnabled) document.body.classList.add('single-language');
-               return;
+
+        function renderNextBatch() {
+            if (AppState.renderedCount >= AppState.filteredData.length) return; // 已全部渲染完畢
+
+            const chunkSize = 50; // 每次觸底加載的句數
+            const nextBatch = AppState.filteredData.slice(AppState.renderedCount, AppState.renderedCount + chunkSize);
+            
+            const container = document.getElementById('subtitles');
+            container.insertAdjacentHTML('beforeend', nextBatch.map(createSubtitleRowHTML).join(''));
+            
+            // 針對剛加載進來有內容的筆記框進行高度計算
+            container.querySelectorAll(`.row:nth-child(n+${AppState.renderedCount + 1}) .note-box.has-content`).forEach(autoResizeTextarea);
+            
+            AppState.renderedCount += nextBatch.length;
+        }
+
+        // 建立無限滾動觸發器 (Intersection Observer)
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                renderNextBatch();
             }
-            container.insertAdjacentHTML('beforeend', chunk.map(item => createSubtitleRowHTML(item)).join(''));
-            container.querySelectorAll('.row:nth-child(n+' + (currentIndex + 1) + ') .note-box.has-content').forEach(box => autoResizeTextarea(box));
-            currentIndex += chunkSize;
-            updateProgress((currentIndex / displayData.length) * 100);
-            renderAnimationId = requestAnimationFrame(renderNextChunk); 
-          }
-          renderNextChunk();
-        }
-        
-        document.getElementById('searchBox').addEventListener('input', function(){ updateDisplay(this.value.trim()); });
+        }, { rootMargin: '400px' }); // 距離底部還有 400px 時就提早加載，做到無縫滑動
 
-        // ==================== 事件處理與存檔 ====================
-        const subtitlesContainer = document.getElementById('subtitles');
-        let saveTimers = {};
+        // 綁定感應區
+        window.addEventListener('DOMContentLoaded', () => {
+            observer.observe(document.getElementById('scrollSentinel'));
+        });
 
+        const debouncedSearch = debounce((e) => updateDisplay(e.target.value.trim()), 300);
+        document.getElementById('searchBox').addEventListener('input', debouncedSearch);
+
+        // ==================== 存檔與拖曳邏輯 ====================
+        const saveTimers = {};
         const saveNote = (noteBox) => {
             const index = parseInt(noteBox.dataset.index);
-            const row = noteBox.closest('.row');
             const val = noteBox.value.trim();
-            if (val) { notesData[index] = val; noteBox.classList.add('has-content'); row.querySelector('.subtitle').classList.add('has-written-note'); } 
-            else { delete notesData[index]; noteBox.classList.remove('has-content'); row.querySelector('.subtitle').classList.remove('has-written-note'); }
+            if (val) { AppState.notesData[index] = val; noteBox.classList.add('has-content'); noteBox.closest('.row').querySelector('.subtitle').classList.add('has-written-note'); } 
+            else { delete AppState.notesData[index]; noteBox.classList.remove('has-content'); noteBox.closest('.row').querySelector('.subtitle').classList.remove('has-written-note'); }
             updateNoteCount();
         };
 
-        subtitlesContainer.addEventListener('input', (e) => {
+        const subtitlesContainer = document.getElementById('subtitles');
+        subtitlesContainer.addEventListener('input', e => {
             if (e.target.classList.contains('note-box')) {
                 autoResizeTextarea(e.target);
-                const index = e.target.dataset.index;
-                clearTimeout(saveTimers[index]);
-                saveTimers[index] = setTimeout(() => saveNote(e.target), 500);
+                clearTimeout(saveTimers[e.target.dataset.index]);
+                saveTimers[e.target.dataset.index] = setTimeout(() => saveNote(e.target), 500);
             }
         });
-        subtitlesContainer.addEventListener('focusout', (e) => { if (e.target.classList.contains('note-box')) saveNote(e.target); });
+        subtitlesContainer.addEventListener('focusout', e => { if (e.target.classList.contains('note-box')) saveNote(e.target); });
 
-        // ==================== 改進的拖曳寫入邏輯：直接接在最後方並換行 ====================
-        subtitlesContainer.addEventListener('dragover', (e) => { 
-            if (e.target.classList.contains('note-box')) { 
-                e.preventDefault(); 
-                e.target.style.borderColor = '#4CAF50'; 
-            } 
-        });
-        
-        subtitlesContainer.addEventListener('dragleave', (e) => { 
-            if (e.target.classList.contains('note-box')) e.target.style.borderColor = ''; 
-        });
-        
-        subtitlesContainer.addEventListener('drop', (e) => {
+        subtitlesContainer.addEventListener('dragover', e => { if (e.target.classList.contains('note-box')) { e.preventDefault(); e.target.style.borderColor = '#4CAF50'; } });
+        subtitlesContainer.addEventListener('dragleave', e => { if (e.target.classList.contains('note-box')) e.target.style.borderColor = ''; });
+        subtitlesContainer.addEventListener('drop', e => {
             if (e.target.classList.contains('note-box')) {
-                e.preventDefault(); 
-                e.target.style.borderColor = '';
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) return;
-                
+                e.preventDefault(); e.target.style.borderColor = '';
+                if (e.dataTransfer.files?.length) return;
                 const text = e.dataTransfer.getData('text/plain');
                 if (text) {
-                    const currentValue = e.target.value;
-                    // 如果原本有內容且結尾不是換行，就自動補上一個換行
-                    let prefix = (currentValue.length > 0 && !currentValue.endsWith('\n')) ? '\n' : ''; 
-                    
-                    // 把文字接在最後方
-                    e.target.value = currentValue + prefix + text;
-                    
-                    // 將游標移到最後面
+                    const cur = e.target.value; e.target.value = cur + (cur && !cur.endsWith('\n') ? '\n' : '') + text;
                     e.target.selectionStart = e.target.selectionEnd = e.target.value.length;
-                    
-                    // 觸發存檔
                     e.target.dispatchEvent(new Event('input', { bubbles: true }));  
                 }
             }
         });
 
-        // ==================== 介面按鈕邏輯 ====================
+        // ==================== 按鈕與匯出邏輯 ====================
         document.getElementById('bilingualBtn').addEventListener('click', function() {
-          bilingualEnabled = !bilingualEnabled; this.textContent = bilingualEnabled ? '單語顯示' : '雙語顯示';
-          document.body.classList.toggle('single-language', !bilingualEnabled);
-          document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
+          AppState.bilingualEnabled = !AppState.bilingualEnabled; this.textContent = AppState.bilingualEnabled ? '單語顯示' : '雙語顯示';
+          document.body.classList.toggle('single-language', !AppState.bilingualEnabled);
+          document.querySelectorAll('.note-box').forEach(autoResizeTextarea);
         });
 
         document.getElementById('toggleNotesBtn').addEventListener('click', function() {
-          notesVisible = !notesVisible; this.textContent = notesVisible ? '隱藏筆記' : '顯示筆記';
-          document.body.classList.toggle('hide-notes', !notesVisible);
-          if (notesVisible) document.querySelectorAll('.note-box').forEach(noteBox => autoResizeTextarea(noteBox));
-          else document.querySelectorAll('.text-box').forEach(textBox => textBox.style.height = 'auto');
+          AppState.notesVisible = !AppState.notesVisible; this.textContent = AppState.notesVisible ? '隱藏筆記' : '顯示筆記';
+          document.body.classList.toggle('hide-notes', !AppState.notesVisible);
+          AppState.notesVisible ? document.querySelectorAll('.note-box').forEach(autoResizeTextarea) : document.querySelectorAll('.text-box').forEach(t => t.style.height = 'auto');
         });
 
-        const mainExportBtn = document.getElementById('mainExportBtn');
         const exportMenu = document.getElementById('exportMenu');
-        mainExportBtn.addEventListener('click', (e) => { e.stopPropagation(); exportMenu.classList.toggle('show'); });
-        window.addEventListener('click', () => { if (exportMenu.classList.contains('show')) exportMenu.classList.remove('show'); });
+        document.getElementById('mainExportBtn').addEventListener('click', e => { e.stopPropagation(); exportMenu.classList.toggle('show'); });
+        window.addEventListener('click', () => exportMenu.classList.remove('show'));
 
-        document.getElementById('importBtn').addEventListener('click', () => {
-          if(processedSubtitles.length === 0) return alert('請先上傳檔案');
-          document.getElementById('importFileInput').click();
-        });
-
-        document.getElementById('importFileInput').addEventListener('change', function(e) {
+        document.getElementById('importBtn').addEventListener('click', () => AppState.processedSubtitles.length ? document.getElementById('importFileInput').click() : alert('請先上傳檔案'));
+        document.getElementById('importFileInput').addEventListener('change', e => {
           const file = e.target.files[0]; if (!file) return;
           const reader = new FileReader();
-          reader.onload = (ev) => {
+          reader.onload = ev => {
             try {
               const doc = new DOMParser().parseFromString(ev.target.result, 'text/html');
-              const exportItems = doc.querySelectorAll('.export-item');
-              if (exportItems.length === 0) return alert('無法識別的格式，請確認是否為系統備份檔案。');
-              
-              let importedCount = 0;
-              exportItems.forEach(item => {
-                const originalIndex = item.getAttribute('data-original-index');
-                const noteEl = item.querySelector('.export-note-content');
-                if (originalIndex !== null && noteEl) {
-                  const noteText = noteEl.textContent.trim();
-                  const idx = parseInt(originalIndex);
-                  if (noteText && idx < processedSubtitles.length) { notesData[idx] = noteText; importedCount++; }
-                }
+              let count = 0;
+              doc.querySelectorAll('.export-item').forEach(item => {
+                const idx = parseInt(item.getAttribute('data-original-index'));
+                const text = item.querySelector('.export-note-content')?.textContent.trim();
+                if (text && idx < AppState.processedSubtitles.length) { AppState.notesData[idx] = text; count++; }
               });
-              if (importedCount > 0) { updateDisplay(); updateNoteCount(); showGlobalStatus(`成功導入 ${importedCount} 條筆記！`); } 
-            } catch (err) { alert('解析筆記時發生錯誤'); }
-          };
-          reader.readAsText(file, 'utf-8'); this.value = '';
+              if (count > 0) { updateDisplay(undefined); updateNoteCount(); showGlobalStatus(`成功導入 ${count} 條筆記！`); } 
+            } catch { alert('解析失敗'); }
+          }; reader.readAsText(file); e.target.value = '';
         });
 
-        // ==================== 匯出 HTML (備份檔，保留原本完整格式) ====================
+        const triggerDownload = (htmlStr, suffix) => {
+            const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `${getSafeFileName()}_${suffix}.html`; a.click();
+        };
+
         document.getElementById('exportBtn').addEventListener('click', () => {
-          const notes = Object.entries(notesData).filter(([i, n]) => n.trim());
-          if (notes.length === 0) return alert('目前沒有筆記可供匯出');
-
-          const items = notes.map(([idxStr, note], i) => {
-            const idx = parseInt(idxStr); const s = processedSubtitles[idx];
+          const notes = Object.entries(AppState.notesData).filter(([_, n]) => n.trim());
+          if (!notes.length) return alert('目前沒有筆記可供匯出');
+          
+          const items = notes.map(([idx, note], i) => {
+            const s = AppState.processedSubtitles[idx];
             const title = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
-            const timecode = (s.startTime && s.endTime) ? `${s.startTime} --> ${s.endTime}` : '';
-            const timecodeHtml = timecode ? `<div class="export-timecode" style="color:#666; font-size:12px; margin-bottom:6px; margin-left:24px;">⏱ ${escapeHtml(timecode)}</div>` : '';
-            
-            return `<div class="export-item" data-original-index="${idx}">
-              <div class="export-header" style="display:flex; align-items:baseline; gap:8px;">
-                <div class="export-number" style="font-weight:bold;">${i+1}.</div>
-                <div class="export-note-subtitle" style="font-weight:bold; color:#2c3e50;">${escapeHtml(title)}</div>
-              </div>
-              ${timecodeHtml}
-              <div class="export-note-content" style="color:#e67e22; white-space:pre-wrap; background:#fff8e1; padding:10px; border-radius:4px; border-left:4px solid #ff9800; margin-bottom: 16px;">${escapeHtml(note)}</div>
-            </div><hr style="border:0; border-top:1px dashed #eee; margin:16px 0;" />`;
+            const time = (s.startTime && s.endTime) ? `<div class="export-timecode" style="color:#666; font-size:12px; margin-bottom:6px; margin-left:24px;">⏱ ${escapeHtml(s.startTime)} --> ${escapeHtml(s.endTime)}</div>` : '';
+            return `<div class="export-item" data-original-index="${idx}"><div style="display:flex; align-items:baseline; gap:8px;"><div style="font-weight:bold;">${i+1}.</div><div style="font-weight:bold; color:#2c3e50;">${escapeHtml(title)}</div></div>${time}<div class="export-note-content" style="color:#e67e22; white-space:pre-wrap; background:#fff8e1; padding:10px; border-radius:4px; border-left:4px solid #ff9800; margin-bottom: 16px;">${escapeHtml(note)}</div></div><hr style="border:0; border-top:1px dashed #eee; margin:16px 0;" />`;
           }).join('');
-          
-          const html = `<!doctype html><html><head><meta charset="utf-8"><title>筆記備份_${escapeHtml(currentFileName)}</title><style>body{padding:20px;font-family:sans-serif;}</style></head>
-          <body><h2>${escapeHtml(currentFileName)} - 筆記備份</h2><p style="color:#666;font-size:12px;">此為您撰寫的筆記紀錄，可隨時重新導入系統中。</p><hr style="margin-bottom:20px;"/>${items}</body></html>`;
-          
-          const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          
-          a.download = `${getSafeFileName()}_筆記備份.html`;
-          a.click();
+          triggerDownload(`<!doctype html><html><head><meta charset="utf-8"><title>筆記備份_${escapeHtml(AppState.currentFileName)}</title><style>body{padding:20px;font-family:sans-serif;}</style></head><body><h2>${escapeHtml(AppState.currentFileName)} - 筆記備份</h2><p style="color:#666;font-size:12px;">此為您撰寫的筆記紀錄，可隨時重新導入系統中。</p><hr style="margin-bottom:20px;"/>${items}</body></html>`, '筆記備份');
         });
 
-        // ==================== 📝 PDF (僅筆記) - 同 HTML 樣式排版 ====================
-        document.getElementById('exportPdfNotesBtn').addEventListener('click', () => {
-          const notes = Object.entries(notesData).filter(([i, n]) => n.trim());
-          if (notes.length === 0) return alert('目前沒有筆記可供匯出');
+        const triggerPrint = (htmlStr) => {
+            const win = window.open('', '_blank'); win.document.write(htmlStr); win.document.close();
+            setTimeout(() => { win.focus(); win.print(); }, 250);
+        };
 
-          const items = notes.map(([idxStr, note], i) => {
-            const idx = parseInt(idxStr); const s = processedSubtitles[idx];
-            const title = s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese;
-            const timecode = (s.startTime && s.endTime) ? `${s.startTime} --> ${s.endTime}` : '';
-            const timecodeHtml = timecode ? `<div class="export-timecode" style="color:#666; font-size:12px; margin-bottom:6px; margin-left:24px;">⏱ ${escapeHtml(timecode)}</div>` : '';
-            
-            return `<div class="export-item" style="page-break-inside: avoid;">
-              <div class="export-header" style="display:flex; align-items:baseline; gap:8px;">
-                <div class="export-number" style="font-weight:bold;">${i+1}.</div>
-                <div class="export-note-subtitle" style="font-weight:bold; color:#2c3e50;">${escapeHtml(title)}</div>
-              </div>
-              ${timecodeHtml}
-              <div class="export-note-content" style="color:#e67e22; white-space:pre-wrap; background:#fff8e1 !important; padding:10px; border-radius:4px; border-left:4px solid #ff9800; margin-bottom: 16px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">${escapeHtml(note)}</div>
-            </div><hr style="border:0; border-top:1px dashed #eee; margin:16px 0;" />`;
-          }).join('');
-          
-          const html = `<!doctype html>
-          <html lang="zh">
-          <head>
-            <meta charset="utf-8">
-            <title>${escapeHtml(currentFileName)} - 筆記講義</title>
-            <style>
-              @page { margin: 20mm 15mm; }
-              body { font-family: "Helvetica Neue", Helvetica, "Hiragino Sans", "Meiryo", Arial, sans-serif; background: #fff; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
-              .document-header { text-align: center; margin-bottom: 30px; }
-              .document-header h1 { margin: 0 0 10px 0; color: #1a1a1a; font-size: 24px; font-weight: bold; }
-              .document-header p { margin: 0; color: #666; font-size: 12px; }
-            </style>
-          </head>
-          <body>
-            <div class="document-header">
-              <h1>${escapeHtml(getSafeFileName())} - 筆記整理</h1>
-              <p>匯出時間：${new Date().toLocaleString()} &nbsp;|&nbsp; 總計：${notes.length} 條筆記</p>
-            </div>
-            <hr style="border:0; border-top:2px solid #2c3e50; margin-bottom:20px;"/>
-            ${items}
-          </body>
-          </html>`;
-          
-          const printWindow = window.open('', '_blank');
-          printWindow.document.write(html);
-          printWindow.document.close();
-          
-          setTimeout(() => { printWindow.focus(); printWindow.print(); }, 250);
+       document.getElementById('exportPdfNotesBtn').addEventListener('click', () => {
+          const notes = Object.entries(AppState.notesData).filter(([_, n]) => n.trim());
+          if (!notes.length) return alert('目前沒有筆記');
+          const items = notes.map(([idx, note], i) => {
+            const s = AppState.processedSubtitles[idx];
+            return `<div style="page-break-inside: avoid;"><div style="display:flex; align-items:baseline; gap:8px;"><div style="font-weight:bold;">${i+1}.</div><div style="font-weight:bold; color:#2c3e50;">${escapeHtml(s.chinese ? `${s.japanese} | ${s.chinese}` : s.japanese)}</div></div><div style="color:#e67e22; white-space:pre-wrap; background:#fff8e1 !important; padding:10px; border-radius:4px; border-left:4px solid #ff9800; margin-bottom: 16px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">${escapeHtml(note)}</div></div>`;
+          }).join('<hr style="border:0; border-top:1px dashed #eee; margin:16px 0;" />');
+          triggerPrint(`<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>${escapeHtml(AppState.currentFileName)} - 筆記講義</title><style>@page{margin:20mm 15mm;}body{font-family:sans-serif; line-height:1.6; margin:0; padding:20px;}</style></head><body><div style="text-align:center; margin-bottom:30px;"><h1 style="margin:0 0 10px 0;">${escapeHtml(getSafeFileName())} - 筆記整理</h1><p style="margin:0; color:#666; font-size:12px;">總計：${notes.length} 條</p></div><hr style="border:0; border-top:2px solid #2c3e50; margin-bottom:20px;"/>${items}</body></html>`);
         });
 
-        // ==================== 📕 PDF (全文講義) - 完美左右分欄 ====================
         document.getElementById('exportPdfBtn').addEventListener('click', () => {
-          if (processedSubtitles.length === 0) return alert('目前沒有全文資料可供列印');
-
-          const items = processedSubtitles.map((sub, idx) => {
-            const note = notesData[idx] || "";
-            let hasZh = !!sub.chinese;
-            let jpClasses = hasZh ? 'jp-column has-divider' : 'jp-column full-width';
-            
-            let bilingualHtml = `
-              <div class="bilingual-container">
-                <div class="${jpClasses}">${escapeHtml(sub.japanese || sub.originalText)}</div>
-                ${hasZh ? `<div class="zh-column">${escapeHtml(sub.chinese)}</div>` : ''}
-              </div>`;
-            let noteHtml = note ? `<div class="note-box"><div class="note-label">📝 筆記</div><div class="note-content">${escapeHtml(note)}</div></div>` : '';
-            
-            return `<div class="row-item">${bilingualHtml}${noteHtml}</div>`;
+          if (!AppState.processedSubtitles.length) return alert('沒有資料可列印');
+          const items = AppState.processedSubtitles.map((sub, idx) => {
+            const note = AppState.notesData[idx];
+            const hasZh = !!sub.chinese;
+            return `<div class="row-item"><div class="biling"><div class="jp ${hasZh ? 'divi' : 'full'}">${escapeHtml(sub.japanese || sub.originalText)}</div>${hasZh ? `<div class="zh">${escapeHtml(sub.chinese)}</div>` : ''}</div>${note ? `<div class="note-box"><div class="note-label">📝 筆記</div><div class="note-content">${escapeHtml(note)}</div></div>` : ''}</div>`;
           }).join('');
-          
-          const html = `<!doctype html>
-          <html lang="zh">
-          <head>
-            <meta charset="utf-8">
-            <title>${escapeHtml(currentFileName)} - 全文講義</title>
-            <style>
-              @page { margin: 20mm 15mm; }
-              body { font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", Arial, sans-serif; background: #fdfdfd; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
-              .document-header { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; }
-              .document-header h1 { margin: 0; color: #1a1a1a; font-size: 26px; font-weight: 800; }
-              .document-header p { margin: 8px 0 0 0; color: #888; font-size: 13px; }
-              .row-item { background: #ffffff; padding: 16px 20px; margin-bottom: 12px; border-radius: 8px; page-break-inside: avoid; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
-              .bilingual-container { display: flex; gap: 24px; align-items: flex-start; }
-              .jp-column { flex: 1; width: 50%; font-size: 16px; font-weight: 600; color: #2c3e50; line-height: 1.7;}
-              .zh-column { flex: 1; width: 50%; font-size: 15px; color: #555; line-height: 1.7; padding-top: 1px; }
-              .has-divider { border-right: 1px solid #eaeaea; padding-right: 24px; }
-              .full-width { width: 100%; flex: none; }
-              .note-box { background: #fffaf0; border-left: 4px solid #f39c12; padding: 12px 16px; border-radius: 4px; margin-top: 12px; }
-              .note-label { font-size: 12px; font-weight: bold; color: #d35400; margin-bottom: 6px; }
-              .note-content { font-size: 14px; color: #444; white-space: pre-wrap; line-height: 1.6; }
-              @media print {
-                  body { background: #fff; padding: 0; }
-                  .row-item { box-shadow: none; border: none; border-bottom: 1px solid #eee; margin-bottom: 15px; padding: 15px 0; border-radius: 0; }
-                  .row-item:last-child { border-bottom: none; }
-                  .note-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fffaf0 !important; border-color: #f39c12 !important; padding: 10px 14px;}
-              }
-            </style>
-          </head>
-          <body>
-            <div class="document-header"><h1>${escapeHtml(getSafeFileName())}</h1><p>匯出時間：${new Date().toLocaleString()} &nbsp;|&nbsp; 總句數：${processedSubtitles.length}</p></div>
-            ${items}
-          </body></html>`;
-          
-          const printWindow = window.open('', '_blank'); printWindow.document.write(html); printWindow.document.close();
-          setTimeout(() => { printWindow.focus(); printWindow.print(); }, 250);
+          triggerPrint(`<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>${escapeHtml(AppState.currentFileName)} - 全文講義</title><style>@page{margin:20mm 15mm;}body{font-family:sans-serif; background:#fdfdfd; padding:20px;}.row-item{background:#fff; padding:16px 20px; margin-bottom:12px; border-radius:8px; page-break-inside:avoid; border:1px solid #f0f0f0;}.biling{display:flex; gap:24px; align-items:flex-start;}.jp{font-size:16px; font-weight:600; color:#2c3e50; line-height:1.7;}.zh{flex:1; width:50%; font-size:15px; color:#555; line-height:1.7;}.divi{flex:1; width:50%; border-right:1px solid #eaeaea; padding-right:24px;}.full{width:100%;}.note-box{background:#fffaf0; border-left:4px solid #f39c12; padding:12px 16px; margin-top:12px;}.note-label{font-size:12px; font-weight:bold; color:#d35400; margin-bottom:6px;}.note-content{font-size:14px; white-space:pre-wrap;} @media print{body{background:#fff; padding:0;}.row-item{border:none; border-bottom:1px solid #eee; margin-bottom:15px; padding:15px 0; border-radius:0;}.note-box{-webkit-print-color-adjust:exact; print-color-adjust:exact; background:#fffaf0 !important; border-color:#f39c12 !important; padding:10px 14px;}}</style></head><body><div style="text-align:center; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid #e0e0e0;"><h1 style="margin:0; font-size:26px;">${escapeHtml(getSafeFileName())}</h1></div>${items}</body></html>`);
         });
         
-        window.addEventListener('beforeunload', function(e) { if (noteCount > 0) { e.preventDefault(); e.returnValue = '有未匯出的筆記，確定離開？'; } });
+        window.addEventListener('beforeunload', e => { if (AppState.noteCount > 0) { e.preventDefault(); e.returnValue = '有未匯出的筆記，確定離開？'; } });
     </script>
 </body>
 </html>
