@@ -9,8 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
-    <!-- 日語注音引擎（kuromoji）改為動態載入，本機詞典優先 + 多 CDN 鏡像回退，詳見下方 initKuromoji() -->
 
     <style>
         :root {
@@ -68,7 +66,7 @@
         .action-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .search-box {
           padding: 6px 12px; border-radius: 20px; border: 1px solid #ddd; background: #fff;
-          font-size: 13px; width: 150px; transition: all 0.2s ease;
+          font-size: 13px; width: 180px; transition: all 0.2s ease;
         }
         .search-box:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2); }
         
@@ -79,21 +77,6 @@
         .toggle-notes-btn { background: #3498db; }
         body.hide-notes .note-area { display: none !important; }
         
-        /* 日文平假名注音樣式與開關控制 */
-        rt {
-          color: #7f8c8d;
-          font-size: 0.58em;
-          user-select: none; /* 防止複製漢字時連同平假名一起選取 */
-          padding-bottom: 2px;
-        }
-        ruby {
-          ruby-position: over;
-          ruby-align: center;
-        }
-        body.hide-furigana rt {
-          display: none !important;
-        }
-
         main { padding: calc(var(--header-height) + 12px) var(--container-padding) 140px; max-width: var(--max-width); margin: 0 auto; }
         #subtitles { display: block; }
         
@@ -110,19 +93,18 @@
         
         .text-box {
           flex: 1; min-height: 35px; padding: 8px 12px; border-radius: 6px;
-          background: #f9f9f9; font-size: 15px; line-height: 1.6; color: #222;
+          background: #f9f9f9; font-size: 15px; line-height: 1.4; color: #222;
           white-space: pre-wrap; display: flex; flex-direction: column; cursor: text;
           position: relative;
           padding-right: 40px; 
-          justify-content: center;
         }
-        .japanese-text { font-family: "Hiragino Sans", "Meiryo", sans-serif; font-size: 16px; color: #2c3e50; margin-bottom: 4px; line-height: 1.9; }
-        .chinese-text { font-family: "Arial", "Microsoft YaHei", sans-serif; font-size: 15px; color: #666; border-top: 1px dashed #eee; padding-top: 4px; margin-top: 4px; line-height: 1.4; }
+        .japanese-text { font-family: "Hiragino Sans", "Meiryo", sans-serif; font-size: 16px; color: #2c3e50; margin-bottom: 4px; }
+        .chinese-text { font-family: "Arial", "Microsoft YaHei", sans-serif; font-size: 15px; color: #666; border-top: 1px dashed #eee; padding-top: 4px; margin-top: 4px; }
         .single-language .chinese-text { display: none; }
         .single-language .japanese-text { margin-bottom: 0; border: none; }
 
         .row-actions {
-          position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; gap: 4px;
+          position: absolute; right: 8px; top: 8px; display: flex; gap: 4px;
           opacity: 0; transition: opacity 0.2s ease; z-index: 10;
         }
         .text-box:hover .row-actions { opacity: 1; }
@@ -182,14 +164,14 @@
           main { padding-top: calc(var(--header-height) + 16px); padding-bottom: 180px; }
           .subtitle { flex-direction: column; gap: 8px; padding: 8px 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); border: 1px solid rgba(0, 0, 0, 0.08); }
           .text-box { width: 100%; padding: 6px 10px; padding-right: 40px; height: auto; min-height: 34px; font-size: 16px; }
-          .row-actions { top: 12px; transform: none; right: 8px; }
           .note-area { width: 100%; flex: none; }
           .note-container { width: 100%; flex: none; }
           .note-box { width: 100%; height: 20px; max-height: 80px; overflow-y: auto !important; }
+          .row-actions { opacity: 1; }
         }
         
         @media (max-width: 600px) {
-          :root { --header-height: 180px; }
+          :root { --header-height: 160px; }
           .file-search-container { flex-direction: row; gap: 6px; }
           .file-buttons-wrapper { width: 100%; flex: none; gap: 6px; }
           .file-item { width: calc(50% - 3px); justify-content: space-between; }
@@ -208,7 +190,7 @@
     <header class="header" role="banner">
         <div class="header-left">
             <h1>小野字幕君</h1>
-            <p>支援：.srt / .ass / .docx / .txt / .pdf / .epub </p>
+            <p>支援：.srt / .ass / .docx / .txt / .pdf / .epub</p>
         </div>
         <div class="file-search-container" role="region" aria-label="檔案與搜尋">
             
@@ -235,7 +217,6 @@
                 <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字" />
                 <button id="toggleNotesBtn" class="toggle-notes-btn">隱藏筆記</button>
                 <button id="bilingualBtn" class="bilingual-btn">單語顯示</button>
-                <button id="furiganaBtn" class="bilingual-btn" style="background:#2ecc71;">隱藏注音</button>
             </div>
         </div>
     </header>
@@ -278,106 +259,12 @@
             noteCount: 0,
             bilingualEnabled: true,
             notesVisible: true,
-            furiganaEnabled: true, // 新增：是否顯示平假名注音
             renderedCount: 0, // 無限滾動的計數器
             currentUtterance: null
         };
         
         let file1Data = { name: "", subtitles: [] };
         let file2Data = { name: "", subtitles: [] };
-        
-        // ==================== 日語注音引擎（kuromoji 本機優先 + 多 CDN 回退） ====================
-        let kuro = null;                 // kuromoji tokenizer 實例
-        let isKuroshiroReady = false;    // 注音引擎是否就緒（沿用原欄位名稱）
-        let kuroLoading = null;          // 防止重複初始化
-
-        // 腳本來源：本機 kuromoji.js 優先，失敗再依序退回各 CDN 鏡像
-        // （gcore / fastly 在中國大陸通常可達，cdn / unpkg 作最後備援）
-        const KURO_SCRIPT_SOURCES = [
-            "kuromoji/kuromoji.js",
-            "https://gcore.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js",
-            "https://fastly.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js",
-            "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js",
-            "https://unpkg.com/kuromoji@0.1.2/build/kuromoji.js"
-        ];
-        // 詞典來源：本機（需經本地伺服器開啟，完全離線）→ CDN 鏡像
-        const KURO_DICT_SOURCES = [
-            "kuromoji/dict",
-            "https://gcore.jsdelivr.net/npm/kuromoji@0.1.2/dict",
-            "https://fastly.jsdelivr.net/npm/kuromoji@0.1.2/dict"
-        ];
-
-        function loadScriptFallback(urls) {
-            return new Promise((resolve, reject) => {
-                let i = 0;
-                const tryNext = () => {
-                    if (i >= urls.length) return reject(new Error("所有腳本來源皆失敗"));
-                    const s = document.createElement("script");
-                    s.src = urls[i];
-                    s.onload = () => resolve(urls[i]);
-                    s.onerror = () => { i++; tryNext(); };
-                    document.head.appendChild(s);
-                };
-                tryNext();
-            });
-        }
-
-        function buildTokenizer(dictPath) {
-            return new Promise((resolve, reject) => {
-                try {
-                    kuromoji.builder({ dicPath: dictPath }).build((err, tokenizer) => {
-                        if (err) reject(err); else resolve(tokenizer);
-                    });
-                } catch (e) { reject(e); }
-            });
-        }
-
-        // 片假名 → 平假名（僅平移 Unicode 0x30A1–0x30F6 區 -0x60，長音符等保留）
-        function katakanaToHiragana(str) {
-            return String(str).replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
-        }
-
-        // 依 kuromoji tokens 產生 <ruby>漢字<rt>平假名</rt></ruby>
-        function furiganaFromTokens(tokens) {
-            let html = "";
-            for (let i = 0; i < tokens.length; i++) {
-                const t = tokens[i];
-                const surface = t.surface_form || "";
-                const reading = t.reading || "";
-                const hasKanji = /[\u4e00-\u9faf]/.test(surface);
-                if (hasKanji && reading && reading !== surface) {
-                    html += "<ruby>" + escapeHtml(surface) + "<rt>" + escapeHtml(katakanaToHiragana(reading)) + "</rt></ruby>";
-                } else {
-                    html += escapeHtml(surface);
-                }
-            }
-            return html;
-        }
-
-        async function initKuromoji() {
-            if (kuroLoading) return kuroLoading;
-            kuroLoading = (async () => {
-                try {
-                    updateUIStatus("正在準備日語注音引擎...", "loading");
-                    await loadScriptFallback(KURO_SCRIPT_SOURCES);
-                    let tokenizer = null, lastErr = null;
-                    for (const dp of KURO_DICT_SOURCES) {
-                        try { tokenizer = await buildTokenizer(dp); break; }
-                        catch (e) { lastErr = e; }
-                    }
-                    if (!tokenizer) throw lastErr || new Error("詞典載入失敗");
-                    kuro = tokenizer;
-                    isKuroshiroReady = true;
-                    showGlobalStatus("日語注音系統準備就緒！");
-                    if (AppState.processedSubtitles.length) processAndDisplayData();
-                } catch (err) {
-                    console.error("注音引擎初始化失敗:", err);
-                    showGlobalStatus("注音功能加載失敗，將使用純文字模式", "error");
-                }
-            })();
-            return kuroLoading;
-        }
-        document.addEventListener("DOMContentLoaded", initKuromoji);
         
         // ==================== 工具函數 ====================
         const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -478,60 +365,30 @@
         }
         
         // ==================== 數據處理核心 ====================
-        async function processAndDisplayData() {
+        function processAndDisplayData() {
           AppState.notesData = {};
-          let rawSubs = [];
           
           if (file1Data.subtitles.length > 0 && file2Data.subtitles.length > 0) {
             updateUIStatus("偵測到雙檔案，正在自動對齊合併...", 'loading');
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            let jpSubs = file1Data.subtitles; let zhSubs = file2Data.subtitles;
-            
-            let f1KanaCount = 0; let f2KanaCount = 0;
-            for(let i=0; i<Math.min(20, file1Data.subtitles.length); i++) if (isJapaneseText(file1Data.subtitles[i].text)) f1KanaCount++;
-            for(let i=0; i<Math.min(20, file2Data.subtitles.length); i++) if (isJapaneseText(file2Data.subtitles[i].text)) f2KanaCount++;
+            setTimeout(() => {
+              let jpSubs = file1Data.subtitles; let zhSubs = file2Data.subtitles;
+              
+              let f1KanaCount = 0; let f2KanaCount = 0;
+              for(let i=0; i<Math.min(20, file1Data.subtitles.length); i++) if (isJapaneseText(file1Data.subtitles[i].text)) f1KanaCount++;
+              for(let i=0; i<Math.min(20, file2Data.subtitles.length); i++) if (isJapaneseText(file2Data.subtitles[i].text)) f2KanaCount++;
 
-            if (f2KanaCount > f1KanaCount) { jpSubs = file2Data.subtitles; zhSubs = file1Data.subtitles; } 
-            
-            AppState.currentFileName = `${file1Data.name} + ${file2Data.name}`;
-            rawSubs = mergeSubtitlesArrays(jpSubs, zhSubs);
+              if (f2KanaCount > f1KanaCount) { jpSubs = file2Data.subtitles; zhSubs = file1Data.subtitles; } 
+              
+              AppState.currentFileName = `${file1Data.name} + ${file2Data.name}`;
+              AppState.processedSubtitles = mergeSubtitlesArrays(jpSubs, zhSubs);
+              updateNoteCount(); updateDisplay(); 
+            }, 100);
           } else {
             const activeFile = file1Data.subtitles.length > 0 ? file1Data : file2Data;
             AppState.currentFileName = activeFile.name;
-            rawSubs = processSingleFileSubtitles(activeFile.subtitles);
+            AppState.processedSubtitles = processSingleFileSubtitles(activeFile.subtitles);
+            updateNoteCount(); updateDisplay();
           }
-
-          AppState.processedSubtitles = rawSubs;
-
-          // 平假名注音生成處理（kuromoji 本機 / CDN）
-          if (isKuroshiroReady && AppState.processedSubtitles.length > 0) {
-            updateUIStatus("正在生成日語平假名注音，請稍候...", 'loading');
-            await new Promise(resolve => setTimeout(resolve, 50));
-            try {
-              AppState.processedSubtitles.forEach((sub) => {
-                if (sub.japanese) {
-                  try {
-                    const tokens = kuro.tokenize(sub.japanese);
-                    sub.rubyHtml = furiganaFromTokens(tokens);
-                  } catch (e) {
-                    sub.rubyHtml = escapeHtml(sub.japanese);
-                  }
-                } else {
-                  sub.rubyHtml = '';
-                }
-              });
-            } catch (err) {
-              console.error("注音轉換出錯:", err);
-            }
-          } else {
-            AppState.processedSubtitles.forEach(sub => {
-              sub.rubyHtml = escapeHtml(sub.japanese || '');
-            });
-          }
-
-          updateNoteCount(); 
-          updateDisplay();
         }
 
         function processSingleFileSubtitles(subtitles) {
@@ -748,17 +605,9 @@
             if (query !== undefined) {
                 let displayData = [];
                 if (!query) {
-                    displayData = AppState.processedSubtitles.map((sub, i) => ({ 
-                        sub, 
-                        originalIndex: i, 
-                        isContext: false, 
-                        highlightJp: sub.rubyHtml || escapeHtml(sub.japanese || ''), 
-                        highlightZh: escapeHtml(sub.chinese || '') 
-                    }));
+                    displayData = AppState.processedSubtitles.map((sub, i) => ({ sub, originalIndex: i, isContext: false, highlightJp: escapeHtml(sub.japanese || ''), highlightZh: escapeHtml(sub.chinese || '') }));
                 } else {
                     const regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
-                    // 安全高亮：負向預查排除 HTML 標籤內部的屬性，避免破壞 <ruby> 結構
-                    const safeRegex = new RegExp('(' + escapeRegExp(query) + ')(?![^<]*>)', 'gi');
                     let indices = new Set();
                     AppState.processedSubtitles.forEach((sub, idx) => {
                         if (((sub.japanese || '') + ' ' + (sub.chinese || '')).match(regex)) {
@@ -768,12 +617,8 @@
                     Array.from(indices).sort((a,b) => a - b).forEach(idx => {
                         const sub = AppState.processedSubtitles[idx];
                         const isMatch = ((sub.japanese || '') + ' ' + (sub.chinese || '')).match(regex);
-                        let highlightJp = sub.rubyHtml || escapeHtml(sub.japanese || ''); 
-                        let highlightZh = escapeHtml(sub.chinese || '');
-                        if (isMatch) { 
-                            highlightJp = highlightJp.replace(safeRegex, '<span class="highlight">$1</span>'); 
-                            highlightZh = highlightZh.replace(regex, '<span class="highlight">$1</span>'); 
-                        }
+                        let highlightJp = escapeHtml(sub.japanese || ''); let highlightZh = escapeHtml(sub.chinese || '');
+                        if (isMatch) { highlightJp = highlightJp.replace(regex, '<span class="highlight">$1</span>'); highlightZh = highlightZh.replace(regex, '<span class="highlight">$1</span>'); }
                         displayData.push({ sub, originalIndex: idx, isContext: !isMatch, highlightJp, highlightZh });
                     });
                 }
@@ -869,14 +714,6 @@
           document.body.classList.toggle('hide-notes', !AppState.notesVisible);
           AppState.notesVisible ? document.querySelectorAll('.note-box').forEach(autoResizeTextarea) : document.querySelectorAll('.text-box').forEach(t => t.style.height = 'auto');
         });
-        
-        // 新增：平假名注音顯示與隱藏切換監聽
-        document.getElementById('furiganaBtn').addEventListener('click', function() {
-          AppState.furiganaEnabled = !AppState.furiganaEnabled; 
-          this.textContent = AppState.furiganaEnabled ? '隱藏注音' : '顯示注音';
-          document.body.classList.toggle('hide-furigana', !AppState.furiganaEnabled);
-          document.querySelectorAll('.note-box').forEach(autoResizeTextarea);
-        });
 
         const exportMenu = document.getElementById('exportMenu');
         document.getElementById('mainExportBtn').addEventListener('click', e => { e.stopPropagation(); exportMenu.classList.toggle('show'); });
@@ -939,10 +776,9 @@
           const items = AppState.processedSubtitles.map((sub, idx) => {
             const note = AppState.notesData[idx];
             const hasZh = !!sub.chinese;
-            const jpContent = sub.rubyHtml || escapeHtml(sub.japanese || sub.originalText);
-            return `<div class="row-item"><div class="biling"><div class="jp ${hasZh ? 'divi' : 'full'}">${jpContent}</div>${hasZh ? `<div class="zh">${escapeHtml(sub.chinese)}</div>` : ''}</div>${note ? `<div class="note-box"><div class="note-label">📝 筆記</div><div class="note-content">${escapeHtml(note)}</div></div>` : ''}</div>`;
+            return `<div class="row-item"><div class="biling"><div class="jp ${hasZh ? 'divi' : 'full'}">${escapeHtml(sub.japanese || sub.originalText)}</div>${hasZh ? `<div class="zh">${escapeHtml(sub.chinese)}</div>` : ''}</div>${note ? `<div class="note-box"><div class="note-label">📝 筆記</div><div class="note-content">${escapeHtml(note)}</div></div>` : ''}</div>`;
           }).join('');
-          triggerPrint(`<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>${escapeHtml(AppState.currentFileName)} - 全文講義</title><style>@page{margin:20mm 15mm;}body{font-family:sans-serif; background:#fdfdfd; padding:20px;}.row-item{background:#fff; padding:16px 20px; margin-bottom:12px; border-radius:8px; page-break-inside:avoid; border:1px solid #f0f0f0;}.biling{display:flex; gap:24px; align-items:flex-start;}.jp{font-size:16px; font-weight:600; color:#2c3e50; line-height:1.9;}.zh{flex:1; width:50%; font-size:15px; color:#555; line-height:1.7;}.divi{flex:1; width:50%; border-right:1px solid #eaeaea; padding-right:24px;}.full{width:100%;}.note-box{background:#fffaf0; border-left:4px solid #f39c12; padding:12px 16px; margin-top:12px;}.note-label{font-size:12px; font-weight:bold; color:#d35400; margin-bottom:6px;}.note-content{font-size:14px; white-space:pre-wrap;} rt{color:#7f8c8d; font-size:0.55em; padding-bottom:2px;} ruby{ruby-position:over; ruby-align:center;} body.hide-furigana rt{display:none !important;} @media print{body{background:#fff; padding:0;}.row-item{border:none; border-bottom:1px solid #eee; margin-bottom:15px; padding:15px 0; border-radius:0;}.note-box{-webkit-print-color-adjust:exact; print-color-adjust:exact; background:#fffaf0 !important; border-color:#f39c12 !important; padding:10px 14px;}}</style></head><body class="${AppState.furiganaEnabled ? '' : 'hide-furigana'}"><div style="text-align:center; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid #e0e0e0;"><h1 style="margin:0; font-size:26px;">${escapeHtml(getSafeFileName())}</h1></div>${items}</body></html>`);
+          triggerPrint(`<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>${escapeHtml(AppState.currentFileName)} - 全文講義</title><style>@page{margin:20mm 15mm;}body{font-family:sans-serif; background:#fdfdfd; padding:20px;}.row-item{background:#fff; padding:16px 20px; margin-bottom:12px; border-radius:8px; page-break-inside:avoid; border:1px solid #f0f0f0;}.biling{display:flex; gap:24px; align-items:flex-start;}.jp{font-size:16px; font-weight:600; color:#2c3e50; line-height:1.7;}.zh{flex:1; width:50%; font-size:15px; color:#555; line-height:1.7;}.divi{flex:1; width:50%; border-right:1px solid #eaeaea; padding-right:24px;}.full{width:100%;}.note-box{background:#fffaf0; border-left:4px solid #f39c12; padding:12px 16px; margin-top:12px;}.note-label{font-size:12px; font-weight:bold; color:#d35400; margin-bottom:6px;}.note-content{font-size:14px; white-space:pre-wrap;} @media print{body{background:#fff; padding:0;}.row-item{border:none; border-bottom:1px solid #eee; margin-bottom:15px; padding:15px 0; border-radius:0;}.note-box{-webkit-print-color-adjust:exact; print-color-adjust:exact; background:#fffaf0 !important; border-color:#f39c12 !important; padding:10px 14px;}}</style></head><body><div style="text-align:center; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid #e0e0e0;"><h1 style="margin:0; font-size:26px;">${escapeHtml(getSafeFileName())}</h1></div>${items}</body></html>`);
         });
         
         window.addEventListener('beforeunload', e => { if (AppState.noteCount > 0) { e.preventDefault(); e.returnValue = '有未匯出的筆記，確定離開？'; } });
