@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh" data-page-node-id="KDQQTTPJG6Zitzj0a6SwBR">
+<html lang="zh">
 
-<head data-page-node-id="N9fNCsSYVj6PbNvYWNRHTh">
-    <meta charset="utf-8" data-page-node-id="qqe1Vocf2g65smM2Wm8v9T" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="OGsbQgl4GAeh0kmzcVXJNq" />
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>小野字幕君</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
@@ -11,12 +11,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <!-- 預連線 CDN 鏡像，僅作本機詞典的同源回退來源（本機 kuromoji/dict 優先，CDN 僅備援） -->
-    <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin data-page-node-id="BZMpALEwnBSvh9MWxL9NBx" />
-    <link rel="preconnect" href="https://fastly.jsdelivr.net" crossorigin data-page-node-id="rgUJUBJR1dkG0QBK5uzm9M" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin data-page-node-id="yKDP4H7YvobUK913guHc7L" />
-    <link rel="dns-prefetch" href="https://gcore.jsdelivr.net" data-page-node-id="3ISxl3Mgt4Aq2AzjMVgL2V" />
-    <link rel="dns-prefetch" href="https://fastly.jsdelivr.net" data-page-node-id="tObiZygNLVdTsbYQOeUv1V" />
-    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" data-page-node-id="7uD3UWyzA9EwEWPyKrrmtu" />
+    <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://fastly.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="dns-prefetch" href="https://gcore.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://fastly.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
 
     <!-- 日語注音引擎（kuromoji）改為動態載入，本機詞典優先 + 多 CDN 鏡像回退，詳見下方 initKuromoji() -->
 
@@ -66,45 +66,6 @@
         .file-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .file-icon { font-size: 14px; }
         .custom-file-upload.has-file { background: rgba(46, 204, 113, 0.2); border-color: #2ecc71; color: #e8f8f5; }
-        .preset-item { display: flex; align-items: center; gap: 6px; }
-        .preset-select { position: relative; display: inline-block; }
-        .preset-toggle {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 6px 14px;
-          background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 20px; cursor: pointer; font-size: 13px; color: #fff;
-          transition: all 0.2s ease; max-width: 200px; user-select: none; box-sizing: border-box;
-          font-family: inherit;
-        }
-        .preset-toggle:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-1px); }
-        .preset-toggle:focus { outline: none; border-color: #74b9ff; }
-        .preset-caret { font-size: 10px; opacity: 0.8; }
-        .preset-menu {
-          position: absolute; top: calc(100% + 6px); left: 0; z-index: 1000;
-          min-width: 230px; max-height: 60vh; overflow-y: auto;
-          background: #fff; color: #333; border-radius: 10px; padding: 6px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.35); text-align: left;
-        }
-        .preset-menu[hidden] { display: none; }
-        .preset-item-row {
-          display: block; width: 100%; box-sizing: border-box; text-align: left;
-          padding: 7px 10px; border: none; background: none; cursor: pointer;
-          font-size: 13px; color: #333; border-radius: 6px; font-family: inherit;
-        }
-        .preset-item-row:hover { background: #eef4ff; }
-        .preset-group { margin-bottom: 4px; }
-        .preset-group-title {
-          display: flex; align-items: center; justify-content: space-between;
-          width: 100%; box-sizing: border-box; text-align: left;
-          padding: 8px 10px; border: none; background: #e9ecef; cursor: pointer;
-          font-size: 13px; font-weight: bold; color: #333; border-radius: 6px; font-family: inherit;
-        }
-        .preset-group-title:hover { background: #dfe4e8; }
-        .preset-group-caret { font-size: 10px; transition: transform 0.15s ease; }
-        .preset-group.collapsed .preset-group-caret { transform: rotate(-90deg); }
-        .preset-group.collapsed .preset-group-items { display: none; }
-        .preset-group-items { padding-left: 4px; }
-        .preset-divider { height: 1px; background: #e5e5e5; margin: 4px 2px; }
 
         .clear-btn {
           display: none; cursor: pointer; color: #ff5252; font-size: 20px;
@@ -131,18 +92,11 @@
           color: #ff7043;
           font-size: 0.58em;
           user-select: none; /* 防止複製漢字時連同平假名一起選取 */
-          -webkit-user-select: none;
           padding-bottom: 2px;
         }
         ruby {
           ruby-position: over;
           ruby-align: center;
-          user-select: none;       /* 整個 ruby 預設不可選，避免雙擊選詞時連同上方振假名一起被選中 */
-          -webkit-user-select: none;
-        }
-        ruby .rb {                  /* 只讓漢字/片假名本體可選，振假名(rt)仍不可選 */
-          user-select: text;
-          -webkit-user-select: text;
         }
         body.hide-furigana rt {
           display: none !important;
@@ -253,7 +207,6 @@
           .file-buttons-wrapper { width: 100%; flex: none; gap: 6px; }
           .file-item { width: calc(50% - 3px); justify-content: space-between; }
           .custom-file-upload { flex: 1; max-width: none; justify-content: center; padding: 6px; }
-          .preset-select { max-width: none; flex: 1; justify-content: center; }
           .file-name-text { font-size: 11px; max-width: 70px; }
           .clear-btn { font-size: 18px; }
           .action-group { width: 100%; flex-wrap: wrap; gap: 6px; }
@@ -264,76 +217,67 @@
     </style>
 </head>
 
-<body data-page-node-id="Efxb04uNlnV5YLuVlnCpSD">
-    <header class="header" role="banner" data-page-node-id="bDWaQRYEpBTLLEKu0m94aG">
-        <div class="header-left" data-page-node-id="gBaGnWxrF7VDGK6nFl0ACY">
-            <h1 data-page-node-id="acHcjOpUqB4VTJnVPPSsy2">小野字幕君</h1>
-            <p data-page-node-id="RNF3Osg6pLNyRPAJCfjLzp">支援：.srt / .ass / .docx / .txt / .pdf / .epub </p>
+<body>
+    <header class="header" role="banner">
+        <div class="header-left">
+            <h1>小野字幕君</h1>
+            <p>支援：.srt / .ass / .docx / .txt / .pdf / .epub </p>
         </div>
-        <div class="file-search-container" role="region" aria-label="檔案與搜尋" data-page-node-id="Vi38JOqnbqznMzke1utKx6">
+        <div class="file-search-container" role="region" aria-label="檔案與搜尋">
             
-            <div class="file-buttons-wrapper" data-page-node-id="pZAyzc61ChmkcMUcxUG4PV">
-              <div class="file-item" data-page-node-id="Ey0dFEDNxc5yIiPyCtNuJP">
-                  <label class="custom-file-upload" id="labelFile1" data-page-node-id="OS76kPaCz3juNIvbmDehUP">
-                      <input id="fileInput1" type="file" accept=".ass,.srt,.docx,.txt,.pdf,.epub" data-page-node-id="Wp9ivwDS3BmtbDbWUVYVG3" />
-                      <span class="file-icon" data-page-node-id="3evOTot9tKjh0Of5OkHPvo">📁</span>
-                      <span class="file-name-text" id="textFile1" data-page-node-id="w34sqV60Olrbt2kju0SFsQ">選擇檔案 1</span>
+            <div class="file-buttons-wrapper">
+              <div class="file-item">
+                  <label class="custom-file-upload" id="labelFile1">
+                      <input id="fileInput1" type="file" accept=".ass,.srt,.docx,.txt,.pdf,.epub" />
+                      <span class="file-icon">📁</span>
+                      <span class="file-name-text" id="textFile1">選擇檔案 1</span>
                   </label>
-                  <span class="clear-btn" id="clearBtn1" title="移除檔案1" data-page-node-id="9GMmCBVni8MCYYnLQbLh5Y">×</span>
+                  <span class="clear-btn" id="clearBtn1" title="移除檔案1">×</span>
               </div>
-              <div class="file-item" data-page-node-id="0SlSdhFkiMbo22nraq1DIf">
-                  <label class="custom-file-upload" id="labelFile2" data-page-node-id="n0fG597zKcvQWXa6xqENE2">
-                      <input id="fileInput2" type="file" accept=".ass,.srt,.docx,.txt,.pdf,.epub" data-page-node-id="xTVTYRvHpzuXOdw8zU2irZ" />
-                      <span class="file-icon" data-page-node-id="mT0irWTw2FWTSNAGW8yBFL">📁</span>
-                      <span class="file-name-text" id="textFile2" data-page-node-id="VHWklRkSXF0zvH1d000qg3">選擇檔案 2</span>
+              <div class="file-item">
+                  <label class="custom-file-upload" id="labelFile2">
+                      <input id="fileInput2" type="file" accept=".ass,.srt,.docx,.txt,.pdf,.epub" />
+                      <span class="file-icon">📁</span>
+                      <span class="file-name-text" id="textFile2">選擇檔案 2</span>
                   </label>
-                  <span class="clear-btn" id="clearBtn2" title="移除檔案2" data-page-node-id="54c5Ztfe8LOWzNrBbU3NVa">×</span>
-              </div>
-              <div class="file-item preset-item" data-page-node-id="goY83XFYrUDtx0RnB40hoo">
-                  <div class="preset-select" id="presetSelect" data-page-node-id="vfV4cqzPePm1ZuniqHSh5C">
-                      <button type="button" class="preset-toggle" id="presetToggle" aria-expanded="false" data-page-node-id="ndtD2BN8UHRUGilSFRBfxf">
-                          <span class="preset-toggle-label" data-page-node-id="rRD9XJCdLEFMKp3WPRTP46">內建字幕</span>
-                          <span class="preset-caret" data-page-node-id="zCaoVkiLse2VheVY1EXyqK">▾</span>
-                      </button>
-                      <div class="preset-menu" id="presetMenu" hidden data-page-node-id="kpazxhxRK1jn3CDhOgtBor"></div>
-                  </div>
+                  <span class="clear-btn" id="clearBtn2" title="移除檔案2">×</span>
               </div>
             </div>
 
-            <div class="action-group" data-page-node-id="Fm8DxMDKh6CFvDiEdAObc4">
-                <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字" data-page-node-id="Rj6KAPxNpYHyKWFtHFtIbo" />
-                <button id="toggleNotesBtn" class="toggle-notes-btn" data-page-node-id="YGFx75CUwfByUZE8lpjzct">隱藏筆記</button>
-                <button id="bilingualBtn" class="bilingual-btn" data-page-node-id="7bXzThZMWESFkEKLgDjAgu">單語顯示</button>
-                <button id="furiganaBtn" class="bilingual-btn" style="background:#2ecc71;" data-page-node-id="csR85i6na1NEf3XgTqbaTP">隱藏注音</button>
+            <div class="action-group">
+                <input id="searchBox" class="search-box" type="text" placeholder="搜尋關鍵字" />
+                <button id="toggleNotesBtn" class="toggle-notes-btn">隱藏筆記</button>
+                <button id="bilingualBtn" class="bilingual-btn">單語顯示</button>
+                <button id="furiganaBtn" class="bilingual-btn" style="background:#2ecc71;">隱藏注音</button>
             </div>
         </div>
     </header>
 
-    <div class="progress-container" id="progressContainer" data-page-node-id="Szq9Rqt4GpDIuFTChE6SA6">
-        <div class="progress-bar" id="progressBar" data-page-node-id="D2lmv7HPW7mwgytGKMGecR"></div>
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
     </div>
 
-    <div class="global-status" id="globalStatus" data-page-node-id="OGUsWo0M65W2tFnOjoZJ2G"></div>
-    <div class="file-info" id="fileInfo" style="display:none;" data-page-node-id="T3YkE7qpBAcXbB9ap3J2Id"></div>
+    <div class="global-status" id="globalStatus"></div>
+    <div class="file-info" id="fileInfo" style="display:none;"></div>
 
-    <div class="button-container" data-page-node-id="d1DerGTLkxdlz7FcFDBp6j">
-        <button class="import-btn" id="importBtn" data-page-node-id="HDh6kshOuP3d98HZuu1b3o">導入筆記</button>
+    <div class="button-container">
+        <button class="import-btn" id="importBtn">導入筆記</button>
         
-        <div class="export-dropdown" id="exportDropdownContainer" data-page-node-id="mwubsBfd7lvpa1kw5cEH6A">
-            <button class="main-export-btn" id="mainExportBtn" data-page-node-id="2zHg25l4XK5odmqmN57Pj2">匯出檔案 ▴</button>
-            <div class="dropdown-content" id="exportMenu" data-page-node-id="wSFaETBUCj0SFire3a0nWf">
-                <button class="html-btn" id="exportBtn" style="display:none;" data-page-node-id="ojUj1NvsVIh9odu85s9JmQ">📄 HTML (筆記備份)</button>
-                <button class="pdf-notes-btn" id="exportPdfNotesBtn" style="display:none;" data-page-node-id="ttlXh2nFJX249eLXWwta3v">📝 PDF (僅筆記)</button>
-                <button class="pdf-btn" id="exportPdfBtn" data-page-node-id="q1cbSyNJfDEZqPNErxsLP8">📕 PDF (全文)</button>
+        <div class="export-dropdown" id="exportDropdownContainer">
+            <button class="main-export-btn" id="mainExportBtn">匯出檔案 ▴</button>
+            <div class="dropdown-content" id="exportMenu">
+                <button class="html-btn" id="exportBtn" style="display:none;">📄 HTML (筆記備份)</button>
+                <button class="pdf-notes-btn" id="exportPdfNotesBtn" style="display:none;">📝 PDF (僅筆記)</button>
+                <button class="pdf-btn" id="exportPdfBtn">📕 PDF (全文)</button>
             </div>
         </div>
     </div>
 
-    <input type="file" id="importFileInput" accept=".html" style="display:none" data-page-node-id="hsVLDiPFjSkfZx3zR7w9we" />
+    <input type="file" id="importFileInput" accept=".html" style="display:none" />
 
-    <main data-page-node-id="uVgqW4PuFaV2rgGey89Y7C">
-        <div id="subtitles" aria-live="polite" data-page-node-id="PMV7fZ4a8Ds76meenbYOnW"></div>
-        <div id="scrollSentinel" style="height: 20px; width: 100%;" data-page-node-id="ul4OmxcBeRVk4cpqSrxfcD"></div>
+    <main>
+        <div id="subtitles" aria-live="polite"></div>
+        <div id="scrollSentinel" style="height: 20px; width: 100%;"></div>
     </main>
 
     <script>
@@ -434,19 +378,19 @@
                         if (LOANWORDS[m]) { mergedKey = m; span = k + 1; }
                     }
                     if (mergedKey) {
-                        html += '<ruby class="lw"><span class="rb">' + escapeHtml(mergedKey) + '</span><rt class="en">' + escapeHtml(LOANWORDS[mergedKey]) + '</rt></ruby>';
+                        html += '<ruby class="lw">' + escapeHtml(mergedKey) + '<rt class="en">' + escapeHtml(LOANWORDS[mergedKey]) + '</rt></ruby>';
                         i += span - 1;
                         continue;
                     }
                 }
                 if (hasKanji && reading && reading !== surface) {
-                    html += '<ruby><span class="rb">' + escapeHtml(surface) + '</span><rt>' + escapeHtml(katakanaToHiragana(reading)) + '</rt></ruby>';
+                    html += "<ruby>" + escapeHtml(surface) + "<rt>" + escapeHtml(katakanaToHiragana(reading)) + "</rt></ruby>";
                 } else if (typeof LOANWORDS !== 'undefined') {
                     // 字幕常用半角片假名(ｸﾚｼﾞｯﾄｶｰﾄﾞ)，字典 key 是全角，故先用 NFKC 正規化再比對
                     const norm = surface.normalize('NFKC');
                     const lwKey = LOANWORDS[norm] ? norm : (LOANWORDS[surface] ? surface : null);
                     if (lwKey) {
-                    html += '<ruby class="lw"><span class="rb">' + escapeHtml(lwKey) + '</span><rt class="en">' + escapeHtml(LOANWORDS[lwKey]) + '</rt></ruby>';
+                        html += "<ruby class=\"lw\">" + escapeHtml(lwKey) + "<rt class=\"en\">" + escapeHtml(LOANWORDS[lwKey]) + "</rt></ruby>";
                     } else {
                         html += escapeHtml(surface);
                     }
@@ -827,120 +771,6 @@
 
         document.getElementById('fileInput1').addEventListener('change', e => handleFileChoose(e.target.files[0], file1Data, 1));
         document.getElementById('fileInput2').addEventListener('change', e => handleFileChoose(e.target.files[0], file2Data, 2));
-
-        // ==================== 內建字幕（下拉選單） ====================
-        // 下拉內容 = ① 內嵌字幕（EMBEDDED_PRESETS，單一 HTML 就一定顯示）
-        //          + ② 選用：同目錄 samples/ 資料夾裡的字幕（作者在 manifest.json 列出、可放多個檔）。
-        // ⚠️ 檔名含「空格」時請用 %20 編碼（URL 規範，GitHub Pages 必要）；中文檔名 GitHub Pages 其實支援，若要用中文檔名，建議在倉庫根目錄放一個空的 .nojekyll 檔（禁用 Jekyll）以確保路徑原樣託管。
-        // 訪客也能用上方「選擇檔案」上傳自己的 .srt / .ass。
-        // 內嵌示範字幕（demo）已移除；所有內建字幕改由同目錄 samples/manifest.json 提供。
-        // 若以後想加回「單一 HTML 就一定顯示」的內嵌字幕，把字幕物件放進這個陣列即可。
-        const EMBEDDED_PRESETS = [];
-        (function setupPresetSubtitles() {
-          const wrap = document.getElementById('presetSelect');
-          const toggle = document.getElementById('presetToggle');
-          const menu = document.getElementById('presetMenu');
-          if (!wrap || !toggle || !menu) return;
-
-          function makeItem(text, onClick) {
-            const b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'preset-item-row';
-            b.textContent = text;
-            b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); closeMenu(); });
-            return b;
-          }
-          function makeGroup(title, items) {
-            const group = document.createElement('div');
-            group.className = 'preset-group collapsed';
-            const titleBtn = document.createElement('button');
-            titleBtn.type = 'button';
-            titleBtn.className = 'preset-group-title';
-            const left = document.createElement('span'); left.textContent = title;
-            const caret = document.createElement('span'); caret.className = 'preset-group-caret'; caret.textContent = '▾';
-            titleBtn.appendChild(left); titleBtn.appendChild(caret);
-            const itemsWrap = document.createElement('div');
-            itemsWrap.className = 'preset-group-items';
-            items.forEach(it => itemsWrap.appendChild(it));
-            titleBtn.addEventListener('click', (e) => { e.stopPropagation(); group.classList.toggle('collapsed'); });
-            group.appendChild(titleBtn);
-            group.appendChild(itemsWrap);
-            return group;
-          }
-          async function loadPreset(content, path, baseName) {
-            try {
-              updateUIStatus('正在載入內建字幕 ...');
-              let text, fname;
-              if (content) {
-                text = content;
-                fname = baseName + (/Dialogue:/i.test(content) ? '.ass' : '.srt');
-              } else {
-                const res = await fetch(path);
-                if (!res.ok) throw new Error('HTTP ' + res.status + '：' + path);
-                text = await res.text();
-                fname = path.split('/').pop();
-              }
-              handleFileChoose(new File([text], fname, { type: 'text/plain' }), file1Data, 1);
-            } catch (e) {
-              alert('內建字幕讀取失敗：' + (e && e.message ? e.message : e) + '\n\n請檢查：\n• 已把整個 samples/ 資料夾（含 manifest.json 與字幕檔）和 HTML 一起上傳到 GitHub；\n• 檔名若含「空格」請用 %20 編碼；中文檔名可用，但建議在倉庫根目錄放一個空的 .nojekyll 檔以確保路徑正常。');
-            }
-          }
-
-          // ① 內嵌（保證顯示）
-          EMBEDDED_PRESETS.forEach(item => {
-            if (!item || !item.content) return;
-            menu.appendChild(makeItem(item.name || '內嵌字幕', () => loadPreset(item.content, null, item.name || 'preset')));
-          });
-
-          // ② 選用：samples/ 裡的檔（manifest.json：folders 分組 + files 零散）；分組預設「收合」
-          fetch('samples/manifest.json')
-            .then(r => { if (!r.ok) throw new Error('no manifest'); return r.json(); })
-            .then(list => {
-              const folders = list.folders || [];
-              const topFiles = list.files || [];
-              folders.forEach(folder => {
-                const subItems = (folder.files || [])
-                  .filter(it => it && it.file)
-                  .map(it => makeItem(it.name || it.file, () => loadPreset(null, it.file, it.name || it.file)));
-                if (subItems.length) menu.appendChild(makeGroup(folder.name || '資料夾', subItems));
-              });
-              topFiles.forEach(it => {
-                if (!it || !it.file) return;
-                menu.appendChild(makeItem(it.name || it.file, () => loadPreset(null, it.file, it.name || it.file)));
-              });
-              if (!folders.length && !topFiles.length) {
-                const info = document.createElement('div');
-                info.className = 'preset-item-row';
-                info.style.cursor = 'default';
-                info.style.color = '#888';
-                info.textContent = 'manifest 目前沒有任何字幕條目。';
-                menu.appendChild(info);
-              }
-            })
-            .catch((err) => {
-              // 不再靜默吞掉錯誤：把原因顯示在選單裡，方便排查
-              const info = document.createElement('div');
-              info.className = 'preset-group-title';
-              info.style.background = '#fff3cd';
-              info.style.color = '#7a5b00';
-              info.style.fontWeight = 'normal';
-              info.style.cursor = 'default';
-              info.textContent = '⚠️ 內建字幕清單載入失敗：' + (err && err.message ? err.message : err);
-              menu.appendChild(info);
-              const tip = document.createElement('div');
-              tip.className = 'preset-item-row';
-              tip.style.cursor = 'default';
-              tip.style.color = '#888';
-              tip.style.fontSize = '12px';
-              tip.textContent = '請確認：① 已把整個 samples/ 資料夾（含 manifest.json 與全部 .ass）和 index.html 上傳到同一目錄；② 用 GitHub Pages 或本地伺服器開啟（直接雙擊 HTML 會被瀏覽器擋掉讀取 manifest）。';
-              menu.appendChild(tip);
-            });
-
-          function openMenu() { menu.hidden = false; toggle.setAttribute('aria-expanded', 'true'); }
-          function closeMenu() { menu.hidden = true; toggle.setAttribute('aria-expanded', 'false'); }
-          toggle.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden ? openMenu() : closeMenu(); });
-          document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) closeMenu(); });
-        })();
         
         // ==================== 渲染與無限滾動 ====================
         function createSubtitleRowHTML(item) {
